@@ -13,6 +13,7 @@ import { RailIndicador } from '../components/RailIndicador'
 import { Avatar, Folha } from '../components/ui'
 import { LinkAgendamento } from '../components/LinkAgendamento'
 import { AvisoNovos } from '../components/AvisoNovos'
+import { TelaPagamento } from '../components/TelaPagamento'
 
 type ItemMenu = { to: string; nome: string; icone: typeof CalendarDays; contador?: 'comandas' | 'espera' | 'estoque' }
 
@@ -74,6 +75,11 @@ export default function AppLayout() {
   }
 
   const telaCheia = local.pathname.startsWith('/app/agenda')
+
+  // conta suspensa (fim do teste sem pagar ou mensalidade atrasada): só pagamento e suporte
+  if (modo === 'real' && (a.status === 'suspensa' || a.status === 'cancelada') && !local.pathname.startsWith('/app/ajuda')) {
+    return <TelaPagamento />
+  }
 
   return (
     <div className="app">

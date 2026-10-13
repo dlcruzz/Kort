@@ -10,7 +10,7 @@ import { TelaCarregando } from '../../components/guardas'
 import { conviteGuardado } from './Convite'
 
 // Configuração inicial em 3 passos. No modo real tudo vai numa chamada só,
-// rpc('criar_barbearia'): cria a barbearia, o dono, o teste de 14 dias, os
+// rpc('criar_barbearia'): cria a barbearia, o dono, o teste de 7 dias, os
 // serviços, o horário, a jornada do dono e as mensagens padrão.
 
 const slugificar = (s: string) =>

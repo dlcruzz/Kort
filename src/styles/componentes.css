@@ -1056,3 +1056,45 @@
   .so-celular { display: inline-flex; }
   .suporte-tipos { grid-template-columns: 1fr; }
 }
+
+/* ---------- tela de pagamento (conta suspensa / fim do teste) ---------- */
+.pagar {
+  min-height: 100dvh;
+  background: var(--concreto);
+  display: grid;
+  place-items: start center;
+  padding: 40px 16px;
+}
+.pagar-in { width: min(560px, 100%); display: flex; flex-direction: column; gap: 16px; }
+.pagar-logo { width: 56px; }
+.pagar h1 { font-family: var(--f-display); font-size: clamp(34px, 7vw, 48px); line-height: 1; }
+.pagar-planos { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.pagar-planos button {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  text-align: left;
+  padding: 14px 44px 14px 16px;
+  border: 1px solid var(--linha);
+  border-radius: var(--r-painel);
+  background: var(--branco);
+  cursor: pointer;
+  color: inherit;
+}
+.pagar-planos button[aria-checked='true'] { border-color: var(--preto); box-shadow: var(--adesivo); }
+.pagar-planos .nome { font-weight: 700; display: flex; gap: 8px; align-items: center; }
+.pagar-planos .preco { font-family: var(--f-display); font-size: 24px; grid-row: span 2; align-self: center; }
+.pagar-planos .preco small { font-family: var(--f-texto); font-size: 13px; color: var(--grafite); }
+.pagar-planos .pq { font-size: 13px; color: var(--grafite); }
+.pagar-planos .marca { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); }
+.pagar-formas { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: var(--grafite); }
+.pagar-formas svg:not(:first-child) { margin-left: 10px; }
+.pagar-aviso { background: var(--alerta-fundo); color: var(--alerta); padding: 10px 14px; border-radius: 8px; font-size: 14px; }
+.pagar-rodape { display: flex; flex-direction: column; align-items: center; gap: 2px; border-top: 1px solid var(--linha); padding-top: 12px; }
+.pagar-girando {
+  width: 36px; height: 36px; margin: 10px auto; border-radius: 50%;
+  border: 3px solid var(--linha); border-top-color: var(--preto);
+  animation: girar 0.9s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }

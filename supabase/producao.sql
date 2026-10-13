@@ -324,7 +324,7 @@ begin
   insert into public.barbearias (slug, nome, bairro, cidade, modo_operacao, whatsapp, telefone, criado_por)
   values (v_slug, trim(p_nome), nullif(trim(p_bairro), ''), nullif(trim(p_cidade), ''), p_modo,
           nullif(p_whatsapp, ''), nullif(p_whatsapp, ''), v_uid)
-  returning id into v_bar;                -- trigger cria o dono e o teste de 14 dias
+  returning id into v_bar;                -- trigger cria o dono e o teste de 7 dias
 
   select id into v_membro from public.membros where barbearia_id = v_bar and perfil_id = v_uid;
   update public.membros set cor_agenda = '#E7F738' where id = v_membro;
@@ -464,7 +464,8 @@ begin
   where assinatura_id = a.id and status in ('aberta', 'vencida') and v_plano.preco_centavos = 0;
 
   if v_plano.preco_centavos = 0 then
-    update public.assinaturas_saas set status = 'ativa', proximo_vencimento = null where id = a.id and status <> 'teste';
+    update public.assinaturas_saas set status = 'ativa', proximo_vencimento = null where id = a.id and status not in ('teste', 'cancelada');
+    update public.barbearias set publicada = true where id = p_barbearia and a.status = 'suspensa';
   elsif a.status in ('ativa', 'inadimplente') and not exists (
       select 1 from public.faturas where assinatura_id = a.id and status in ('aberta', 'vencida')) then
     v_venc := coalesce(a.proximo_vencimento, current_date + 3);
@@ -487,11 +488,100 @@ begin
   values (v_bar, auth.uid(), 'conta.pagamento_informado', jsonb_build_object('fatura', p_fatura));
 end $$;
 
--- Rotina diária (pg_cron). Mesma regra do server/src/rotinas/mensalidades.ts:
---  1. teste acabou -> ativa e primeira fatura (vence em 3 dias)
+-- Teste grátis de 7 dias para quem se cadastra (substitui os 14 do schema.sql)
+create or replace function privado.tg_nova_barbearia()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_plano uuid; v_nome text;
+begin
+  if new.criado_por is not null then
+    select nome into v_nome from public.perfis where id = new.criado_por;
+    insert into public.membros (barbearia_id, perfil_id, papel, nome_exibicao)
+    values (new.id, new.criado_por, 'dono', coalesce(nullif(v_nome, ''), 'Dono'));
+  end if;
+  select id into v_plano from public.planos where slug = 'barbearia' and ativo;
+  if v_plano is null then
+    select id into v_plano from public.planos where ativo order by preco_centavos desc limit 1;
+  end if;
+  if v_plano is not null then
+    insert into public.assinaturas_saas (barbearia_id, plano_id, status, teste_ate)
+    values (new.id, v_plano, 'teste', current_date + 7);
+  end if;
+  return new;
+end $$;
+
+-- Pagamento confirmado (Mercado Pago, ou baixa manual do admin):
+-- fatura paga, conta ativa, página no ar, próximo vencimento um mês depois.
+create or replace function privado.confirmar_pagamento(p_fatura uuid, p_provedor public.provedor_cobranca, p_id_externo text, p_por uuid)
+returns boolean language plpgsql volatile security definer set search_path = '' as $$
+declare f public.faturas%rowtype; v_prox date;
+begin
+  update public.faturas
+  set status = 'paga', pago_em = now(), confirmado_por = p_por, provedor = p_provedor,
+      id_externo = coalesce(p_id_externo, id_externo)
+  where id = p_fatura and status in ('aberta', 'vencida')
+  returning * into f;
+  if not found then return false; end if;           -- já estava paga (aviso repetido)
+  v_prox := (greatest(f.vencimento, (now() at time zone 'America/Sao_Paulo')::date) + interval '1 month')::date;
+  update public.assinaturas_saas
+  set status = 'ativa', proximo_vencimento = v_prox,
+      dia_vencimento = least(greatest(extract(day from v_prox)::integer, 1), 28)
+  where id = f.assinatura_id and status <> 'cancelada';
+  update public.barbearias set publicada = true where id = f.barbearia_id and not publicada;
+  insert into public.eventos (barbearia_id, evento, metadados)
+  values (f.barbearia_id, 'conta.pagamento_confirmado', jsonb_build_object('fatura', f.id, 'valor', f.valor_centavos, 'provedor', p_provedor));
+  return true;
+end $$;
+
+-- O dono quer pagar agora (fim do teste, conta suspensa ou adiantado no teste):
+-- devolve a fatura em aberto ou cria a do mês com o valor do plano.
+create or replace function public.fatura_para_pagar(p_barbearia uuid)
+returns jsonb language plpgsql volatile security definer set search_path = '' as $$
+declare a public.assinaturas_saas%rowtype; p public.planos%rowtype; f public.faturas%rowtype; v_venc date;
+  h date := (now() at time zone 'America/Sao_Paulo')::date;
+begin
+  if not privado.eh_dono(p_barbearia) then raise exception 'Só o dono paga a mensalidade.' using errcode = 'P0001'; end if;
+  select * into a from public.assinaturas_saas where barbearia_id = p_barbearia;
+  select * into p from public.planos where id = a.plano_id;
+  if p.preco_centavos <= 0 then raise exception 'Escolha um plano pago para pagar.' using errcode = 'P0001'; end if;
+  select * into f from public.faturas where assinatura_id = a.id and status in ('aberta', 'vencida') order by vencimento limit 1;
+  if not found then
+    v_venc := case when a.status = 'teste' and a.teste_ate >= h then a.teste_ate else h end;
+    perform privado.gerar_fatura(a.id, date_trunc('month', v_venc)::date, v_venc);
+    select * into f from public.faturas where assinatura_id = a.id and status in ('aberta', 'vencida') order by vencimento limit 1;
+    if not found then  -- já existe fatura paga para esse mês: cobra o mês seguinte
+      v_venc := (date_trunc('month', v_venc) + interval '1 month')::date + (extract(day from v_venc)::integer - 1);
+      perform privado.gerar_fatura(a.id, date_trunc('month', v_venc)::date, v_venc);
+      select * into f from public.faturas where assinatura_id = a.id and status in ('aberta', 'vencida') order by vencimento limit 1;
+    end if;
+  end if;
+  -- valor sempre o do plano atual
+  if f.valor_centavos <> p.preco_centavos then
+    update public.faturas set valor_centavos = p.preco_centavos where id = f.id returning * into f;
+  end if;
+  return jsonb_build_object('id', f.id, 'valor_centavos', f.valor_centavos, 'competencia', f.competencia,
+                            'vencimento', f.vencimento, 'plano', p.nome, 'barbearia_id', p_barbearia);
+end $$;
+
+-- Chamada só pela função de servidor do Mercado Pago (chave service_role)
+create or replace function public.mp_confirmar_pagamento(p_fatura uuid, p_pagamento text, p_valor_centavos integer)
+returns boolean language plpgsql volatile security definer set search_path = '' as $$
+declare v_valor integer;
+begin
+  select valor_centavos into v_valor from public.faturas where id = p_fatura;
+  if v_valor is null then return false; end if;
+  if p_valor_centavos < v_valor then
+    raise exception 'Valor pago (%) menor que a fatura (%).', p_valor_centavos, v_valor;
+  end if;
+  return privado.confirmar_pagamento(p_fatura, 'mercado_pago', p_pagamento, null);
+end $$;
+
+-- Rotina diária (pg_cron, 06:00 de Brasília):
+--  1. teste acabou sem pagamento -> fatura do mês e conta SUSPENSA na hora
+--     (o app abre na tela de pagamento e a página de agendamento sai do ar)
 --  2. 5 dias antes do vencimento -> fatura do mês
---  3. vencida; 3 dias depois -> inadimplente
---  4. inadimplente com fatura vencida há 15+ dias -> suspensa e página fora do ar
+--  3. passou do vencimento -> fatura vencida e conta "pagamento atrasado"
+--  4. 3 dias de atraso -> suspensa
+--  Pagou (Mercado Pago ou baixa manual) -> volta na hora para ativa.
 create or replace function privado.rotina_mensalidades()
 returns jsonb language plpgsql volatile security definer set search_path = '' as $$
 declare
@@ -499,13 +589,15 @@ declare
   r record; m date; v_venc date;
   n_testes integer := 0; n_faturas integer := 0; n_venc integer := 0; n_inad integer := 0; n_susp integer := 0;
 begin
-  for r in select a.id, p.preco_centavos from public.assinaturas_saas a join public.planos p on p.id = a.plano_id
+  for r in select a.id, a.barbearia_id, p.preco_centavos from public.assinaturas_saas a join public.planos p on p.id = a.plano_id
            where a.status = 'teste' and a.teste_ate < h loop
-    update public.assinaturas_saas
-    set status = 'ativa', proximo_vencimento = case when r.preco_centavos > 0 then h + 3 end,
-        dia_vencimento = least(greatest(extract(day from h + 3)::integer, 1), 28)
-    where id = r.id;
-    if privado.gerar_fatura(r.id, date_trunc('month', h)::date, h + 3) is not null then n_faturas := n_faturas + 1; end if;
+    if r.preco_centavos > 0 then
+      if privado.gerar_fatura(r.id, date_trunc('month', h)::date, h) is not null then n_faturas := n_faturas + 1; end if;
+      update public.assinaturas_saas set status = 'suspensa', proximo_vencimento = h where id = r.id;
+      update public.barbearias set publicada = false where id = r.barbearia_id;
+    else
+      update public.assinaturas_saas set status = 'ativa', proximo_vencimento = null where id = r.id;   -- plano grátis
+    end if;
     n_testes := n_testes + 1;
   end loop;
 
@@ -528,13 +620,13 @@ begin
 
   update public.assinaturas_saas a set status = 'inadimplente'
   where a.status = 'ativa' and exists (
-    select 1 from public.faturas f where f.assinatura_id = a.id and f.status = 'vencida' and f.vencimento < h - 3);
+    select 1 from public.faturas f where f.assinatura_id = a.id and f.status = 'vencida');
   get diagnostics n_inad = row_count;
 
   with s as (
     update public.assinaturas_saas a set status = 'suspensa'
     where a.status = 'inadimplente' and exists (
-      select 1 from public.faturas f where f.assinatura_id = a.id and f.status = 'vencida' and f.vencimento < h - 15)
+      select 1 from public.faturas f where f.assinatura_id = a.id and f.status = 'vencida' and f.vencimento < h - 3)
     returning a.barbearia_id)
   update public.barbearias b set publicada = false from s where b.id = s.barbearia_id;
   get diagnostics n_susp = row_count;
@@ -554,17 +646,13 @@ end $$;
 
 create or replace function public.admin_baixa_fatura(p_fatura uuid)
 returns void language plpgsql volatile security definer set search_path = '' as $$
-declare f public.faturas%rowtype; v_dia smallint;
+declare f public.faturas%rowtype;
 begin
   perform privado.exigir_admin();
-  update public.faturas set status = 'paga', pago_em = now(), confirmado_por = auth.uid()
-  where id = p_fatura and status in ('aberta', 'vencida') returning * into f;
-  if not found then raise exception 'Fatura não encontrada ou já paga.' using errcode = 'P0001'; end if;
-  select dia_vencimento into v_dia from public.assinaturas_saas where id = f.assinatura_id;
-  update public.assinaturas_saas
-  set status = 'ativa', proximo_vencimento = (date_trunc('month', f.competencia) + interval '1 month')::date + (v_dia - 1)
-  where id = f.assinatura_id and status in ('teste', 'ativa', 'inadimplente', 'suspensa');
-  update public.barbearias set publicada = true where id = f.barbearia_id and not publicada;
+  select * into f from public.faturas where id = p_fatura;
+  if not privado.confirmar_pagamento(p_fatura, 'pix_manual', null, auth.uid()) then
+    raise exception 'Fatura não encontrada ou já paga.' using errcode = 'P0001';
+  end if;
   insert into public.admin_logs (admin_id, barbearia_id, acao, detalhes)
   values (auth.uid(), f.barbearia_id, 'baixa_fatura', jsonb_build_object('fatura', f.id, 'valor', f.valor_centavos));
 end $$;
@@ -638,11 +726,17 @@ grant execute on function public.pagina_publica(text), public.agendar_publico(te
 revoke execute on function public.criar_barbearia(text, text, text, text, public.modo_operacao, jsonb, smallint[], time, time, text),
   public.escolher_plano(uuid, text), public.informar_pagamento(uuid), public.admin_baixa_fatura(uuid),
   public.admin_mudar_status(uuid, public.status_assin_saas), public.admin_estender_teste(uuid, integer),
-  public.aceitar_convite(uuid, text) from public;
+  public.aceitar_convite(uuid, text), public.fatura_para_pagar(uuid) from public;
 grant execute on function public.criar_barbearia(text, text, text, text, public.modo_operacao, jsonb, smallint[], time, time, text),
   public.escolher_plano(uuid, text), public.informar_pagamento(uuid), public.admin_baixa_fatura(uuid),
   public.admin_mudar_status(uuid, public.status_assin_saas), public.admin_estender_teste(uuid, integer),
-  public.aceitar_convite(uuid, text) to authenticated;
+  public.aceitar_convite(uuid, text), public.fatura_para_pagar(uuid) to authenticated;
+
+-- só o servidor (Edge Function com a chave service_role) confirma pagamento do Mercado Pago
+revoke execute on function public.mp_confirmar_pagamento(uuid, text, integer) from public, anon, authenticated;
+do $$ begin
+  grant execute on function public.mp_confirmar_pagamento(uuid, text, integer) to service_role;
+exception when undefined_object then null; end $$;
 
 -- O schema "privado" não é exposto pela API, mas as políticas de RLS
 -- chamam algumas funções dele com o papel de quem consulta. Só essas

@@ -8,6 +8,8 @@ import { CabecalhoPagina, Campo, Confirmar, Folha, Segmentos, Switch } from '../
 import { PixQr } from '../../components/PixQr'
 import { useAvisar } from '../../components/avisos'
 import { PLANOS } from '../Site'
+import { irParaPagamento, useAguardarLiberacao } from '../../lib/pagamento'
+import { CreditCard } from 'lucide-react'
 
 type Aba = 'barbearia' | 'horarios' | 'whatsapp' | 'plano' | 'sugestoes'
 
@@ -170,7 +172,7 @@ const NOME_STATUS: Record<string, [string, string]> = {
 }
 
 function Plano() {
-  const { estado, acoes, modo } = useKort()
+  const { estado, acoes, modo, recarregar } = useKort()
   const avisar = useAvisar()
   const [trocar, setTrocar] = useState(false)
   const [escolhido, setEscolhido] = useState<(typeof PLANOS)[number] | null>(null)
@@ -185,6 +187,20 @@ function Plano() {
       })
     : ''
   const [rotulo, classe] = NOME_STATUS[a.status] ?? ['', '']
+  const [params] = useSearchParams()
+  const [pixManual, setPixManual] = useState(false)
+  const [abrindo, setAbrindo] = useState(false)
+  const voltou = params.get('pagamento')
+  const { esperando } = useAguardarLiberacao(estado.barbearia.id, modo === 'real' && voltou === 'ok', () => { avisar('Pagamento confirmado. Obrigado!'); void recarregar() })
+  const pagarOnline = async () => {
+    setAbrindo(true)
+    try {
+      await irParaPagamento(estado.barbearia.id)
+    } catch (e) {
+      avisar((e as Error).message, 'erro')
+      setAbrindo(false)
+    }
+  }
   const linhaPlano =
     a.status === 'teste' && a.teste_ate
       ? `Teste grátis até ${dataCompleta(a.teste_ate)}. Depois, ${a.preco_centavos ? `${dinheiro(a.preco_centavos)} por mês` : 'grátis'}.`
@@ -246,8 +262,24 @@ function Plano() {
       </div>
 
       <section className="painel">
-        <div className="painel-cab"><h2>{aberta ? 'Pagar a mensalidade' : 'Tudo em dia'}</h2></div>
-        <div className="painel-corpo">
+        <div className="painel-cab"><h2>{esperando ? 'Confirmando o pagamento' : aberta ? 'Pagar a mensalidade' : a.status === 'teste' ? 'Assinar agora' : 'Tudo em dia'}</h2></div>
+        {modo === 'real' && a.preco_centavos > 0 && (esperando || aberta || a.status === 'teste') && (
+          <div className="painel-corpo coluna gap-8" style={{ alignItems: 'stretch', paddingBottom: 0 }}>
+            {esperando ? (
+              <p className="pequeno">Assim que o Mercado Pago avisar, a mensalidade aparece como paga aqui. No Pix leva poucos segundos.</p>
+            ) : (
+              <>
+                {voltou === 'pendente' && <p className="pequeno" style={{ color: 'var(--alerta)' }}>Pagamento em análise no Mercado Pago. Quando aprovar, libera sozinho.</p>}
+                {voltou === 'erro' && <p className="pequeno" style={{ color: 'var(--perigo)' }}>O pagamento não foi concluído. Tente de novo.</p>}
+                <button className="btn btn-primario btn-grande" onClick={pagarOnline} disabled={abrindo}>
+                  <CreditCard /> {abrindo ? 'Abrindo...' : `Pagar ${dinheiro(aberta?.valor_centavos ?? a.preco_centavos)} com Pix, cartão ou débito`}
+                </button>
+                <p className="muted pequeno">Pelo Mercado Pago. Libera na hora, sem precisar avisar.{a.status === 'teste' && ' Pagando agora, o próximo mês só conta depois do fim do teste.'}</p>
+              </>
+            )}
+          </div>
+        )}
+        <div className="painel-corpo" style={modo === 'real' && !pixManual && a.preco_centavos > 0 ? { display: 'none' } : undefined}>
           {aberta ? (
             <div className="coluna gap-16" style={{ alignItems: 'flex-start' }}>
               <p className="pequeno">
@@ -277,6 +309,14 @@ function Plano() {
             <p className="muted pequeno">Nenhuma mensalidade em aberto. A próxima aparece aqui perto do vencimento.</p>
           )}
         </div>
+        {modo === 'real' && aberta && a.preco_centavos > 0 && !pixManual && (
+          <div className="painel-corpo" style={{ paddingTop: 8 }}>
+            <button className="btn btn-fantasma btn-pequeno" onClick={() => setPixManual(true)}>Prefere Pix direto na conta do Kort? (baixa manual, até 1 dia útil)</button>
+          </div>
+        )}
+        {modo === 'real' && !aberta && a.status !== 'teste' && (
+          <div className="painel-corpo" style={{ paddingTop: 0 }}><p className="muted pequeno">Nenhuma mensalidade em aberto. A próxima aparece aqui perto do vencimento.</p></div>
+        )}
       </section>
 
       <Folha aberta={trocar} aoFechar={() => setTrocar(false)} titulo="Trocar plano" subtitulo="O valor novo vale para a próxima mensalidade.">
