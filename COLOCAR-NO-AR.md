@@ -61,7 +61,7 @@ Nunca use a chave **service_role** no site. Ela ignora todas as regras de segura
    - Framework preset: **React (Vite)**
    - Build command: `npm run build`
    - Build output directory: `dist`
-4. **Environment variables** (antes do primeiro deploy):
+4. **Environment variables**: opcionais. O código já aponta para o projeto `kort` do Supabase e para a chave Pix do Kort. Só cadastre se quiser trocar:
 
    | Nome | Valor |
    | --- | --- |

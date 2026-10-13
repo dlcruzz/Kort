@@ -17,7 +17,7 @@ npm run dev
 
 Abre em http://localhost:5173.
 
-Sem o `.env.local`, o app abre em **modo demonstração**: dados de exemplo no navegador (localStorage), sem login. Com o Supabase configurado, ele funciona de verdade: cadastro, login, dados no banco, página pública e mensalidade. A demonstração continua disponível em `/demo` (botão "Ver o app por dentro" do site) e a página de exemplo em `/b/esquina-77`.
+O app já vem ligado no banco de produção (Supabase, projeto `kort`): cadastro, login, dados reais, página pública e mensalidade, tudo começando zerado. Para mexer nas telas com dados de exemplo sem tocar no banco, rode com `VITE_KORT_DEMO=1 npm run dev` (abre em `/demo` e `/b/esquina-77`).
 
 ## Telas
 

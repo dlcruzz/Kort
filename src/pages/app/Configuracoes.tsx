@@ -11,7 +11,8 @@ import { PLANOS } from '../Site'
 
 type Aba = 'barbearia' | 'horarios' | 'whatsapp' | 'plano' | 'sugestoes'
 
-const CHAVE_PIX = (import.meta.env.VITE_KORT_PIX_CHAVE as string | undefined) || ''
+// Pix da conta Nu Empresas do Kort (CNPJ)
+const CHAVE_PIX = (import.meta.env.VITE_KORT_PIX_CHAVE as string | undefined) || '64312169000160'
 const PIX_NOME = (import.meta.env.VITE_KORT_PIX_NOME as string | undefined) || 'KORT'
 const PIX_CIDADE = (import.meta.env.VITE_KORT_PIX_CIDADE as string | undefined) || 'SAO PAULO'
 const DOMINIO = dominio()

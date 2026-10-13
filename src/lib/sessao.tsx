@@ -2,8 +2,8 @@
 //
 // - Modo real: login do Supabase. O usuário é dono/barbeiro de uma barbearia
 //   (tabela membros) e/ou super admin do Kort (perfis.super_admin).
-// - Modo demonstração: dados de exemplo no navegador. Liga pelo botão
-//   "Ver demonstração" do site, ou sozinho quando o .env não tem Supabase.
+// - Modo demonstração: dados de exemplo no navegador. Só quando o banco
+//   está desligado (VITE_KORT_DEMO=1), para desenvolver as telas.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
@@ -35,13 +35,13 @@ interface Sessao {
 
 const Ctx = createContext<Sessao | null>(null)
 
+// Com o banco ligado o app é sempre real: nada de dados de exemplo.
 function lerModo(): 'demo' | 'real' {
-  if (!supabaseConfigurado) return 'demo'
-  try {
-    return sessionStorage.getItem(CHAVE_MODO) === 'demo' ? 'demo' : 'real'
-  } catch {
+  if (supabaseConfigurado) {
+    try { sessionStorage.removeItem(CHAVE_MODO) } catch { /* ignore */ }
     return 'real'
   }
+  return 'demo'
 }
 
 export function SessaoProvider({ children }: { children: ReactNode }) {
@@ -102,7 +102,7 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
       perfil,
       vinculo,
       entrarDemo() {
-        try { sessionStorage.setItem(CHAVE_MODO, 'demo') } catch { /* sem storage: só nesta aba */ }
+        if (supabaseConfigurado) return
         setModo('demo')
         setPronto(true)
       },

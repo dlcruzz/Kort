@@ -50,13 +50,13 @@ export function ExigeAdmin({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-/** /demo: liga o modo demonstração e abre a agenda de exemplo. */
+/** /demo: só existe com o banco desligado; em produção volta para o site. */
 export function EntrarDemo() {
   const sessao = useSessao()
   const nav = useNavigate()
   useEffect(() => {
-    sessao.entrarDemo()
-    nav('/app/agenda', { replace: true })
+    if (sessao.modo === 'demo') nav('/app/agenda', { replace: true })
+    else nav('/', { replace: true })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return <TelaCarregando />
 }

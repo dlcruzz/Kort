@@ -65,7 +65,6 @@ export default function Site() {
           <nav aria-label="Seções">
             <a href="#dia">Como funciona</a>
             <a href="#planos">Planos</a>
-            <Link to="/b/esquina-77">Ver uma página de exemplo</Link>
           </nav>
           <div className="acoes">
             <Link className="btn btn-fantasma" to="/entrar">Entrar</Link>
@@ -87,15 +86,15 @@ export default function Site() {
             </p>
             <div className="acoes">
               <Link className="btn btn-primario btn-grande" to="/criar-conta">Criar minha barbearia</Link>
-              <Link className="btn btn-sec btn-grande" to="/demo">Ver o app por dentro</Link>
+              <Link className="btn btn-sec btn-grande" to="/entrar">Já tenho conta</Link>
             </div>
             <p className="nota">14 dias grátis. Sem cartão de crédito e sem fidelidade.</p>
           </div>
 
           <div className="celular" aria-label="Exemplo da página de agendamento no celular" role="img">
             <div className="celular-tela">
-              <div className="nm">Barbearia Esquina 77</div>
-              <div className="sb">Itaquera, São Paulo</div>
+              <div className="nm">Sua Barbearia</div>
+              <div className="sb">Seu bairro, sua cidade</div>
               <div className="serv"><span>Corte degradê</span><b>R$ 45</b></div>
               <div className="lbl">Quinta, 15 de outubro</div>
               <div className="slots">

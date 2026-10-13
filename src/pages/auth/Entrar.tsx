@@ -93,9 +93,7 @@ export default function Entrar() {
             <button type="button" className="btn btn-fantasma btn-pequeno" style={{ alignSelf: 'center' }} onClick={esqueci}>Esqueci minha senha</button>
           )}
           <p className="troca">Ainda não usa o Kort? <Link to="/criar-conta">Criar conta grátis</Link></p>
-          {supabaseConfigurado ? (
-            <p className="troca pequeno">Só quer olhar? <Link to="/demo">Abrir a demonstração</Link></p>
-          ) : (
+          {!supabaseConfigurado && (
             <p className="troca pequeno">Na demonstração, qualquer e-mail e senha entram. Use um e-mail começando com "admin" para abrir o painel Kort.</p>
           )}
         </form>

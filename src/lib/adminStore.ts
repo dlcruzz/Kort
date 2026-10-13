@@ -37,7 +37,10 @@ const DEMO: EstadoAdmin = {
   logs: [],
 }
 
-let estado: EstadoAdmin = DEMO
+const VAZIO: EstadoAdmin = { modo: 'real', carregando: true, barbearias: [], faturas: [], sugestoes: [], uso: [], mrrHistorico: [-5, -4, -3, -2, -1, 0].map((mes) => ({ mes, valor: 0 })), logs: [] }
+
+// Com o banco ligado o painel nunca mostra dados de exemplo
+let estado: EstadoAdmin = supabase ? VAZIO : DEMO
 const ouvintes = new Set<() => void>()
 const emitir = () => ouvintes.forEach((f) => f())
 
@@ -187,7 +190,7 @@ export function useCarregarAdmin() {
   const real = sessao.modo === 'real' && !!sessao.perfil?.super_admin
   useEffect(() => {
     if (real) void carregarAdmin()
-    else {
+    else if (!supabase) {
       estado = DEMO
       emitir()
     }

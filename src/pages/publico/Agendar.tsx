@@ -31,7 +31,7 @@ function NaoEncontrada({ erro }: { erro?: boolean }) {
         <p style={{ color: 'var(--txt-2)', marginTop: 12 }}>
           {erro ? 'Confira sua internet e tente de novo.' : 'Confira o link com a barbearia. O endereço é o site do Kort, /b/ e o nome dela.'}
         </p>
-        <Link className="btn btn-primario" style={{ marginTop: 24 }} to="/b/esquina-77">Ver barbearia de exemplo</Link>
+        <Link className="btn btn-primario" style={{ marginTop: 24 }} to="/">Conhecer o Kort</Link>
       </div>
     </div>
   )

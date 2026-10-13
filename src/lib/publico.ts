@@ -5,7 +5,7 @@
 // cancelar_publico, confirmar_publico. O cliente só vê horários ocupados,
 // nunca o nome de quem marcou.
 //
-// Demonstração (ou o slug de exemplo): usa os dados de exemplo do navegador.
+// Demonstração (banco desligado): usa os dados de exemplo do navegador.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
@@ -108,7 +108,7 @@ function useDemo(ativo: boolean) {
 
 export function usePaginaPublica(slug: string | undefined) {
   const sessao = useSessao()
-  const demo = sessao.modo === 'demo' || slug === SLUG_DEMO || !supabase
+  const demo = sessao.modo === 'demo' || !supabase
   const d = useDemo(demo)
   const [dados, setDados] = useState<DadosPublicos | null>(null)
   const [situacao, setSituacao] = useState<Situacao>('carregando')
@@ -172,7 +172,7 @@ export function usePaginaPublica(slug: string | undefined) {
 /** "Meu horário": o cliente vê, confirma, muda ou cancela pelo link. */
 export function useMeuHorario(slug: string | undefined, id: string | undefined, token: string | null) {
   const sessao = useSessao()
-  const demo = sessao.modo === 'demo' || slug === SLUG_DEMO || !supabase
+  const demo = sessao.modo === 'demo' || !supabase
   const d = useDemo(demo)
   const [dados, setDados] = useState<DadosPublicos | null>(null)
   const [ag, setAg] = useState<Agendamento | null>(null)
