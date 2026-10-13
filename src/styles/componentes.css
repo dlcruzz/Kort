@@ -854,11 +854,14 @@
   color: var(--perigo);
 }
 @media (max-width: 900px) {
-  .link-barra { padding: 8px 12px; }
+  .link-barra { padding: 6px 12px; flex-wrap: nowrap; gap: 8px; }
   .link-barra-rot { display: none; }
-  .link-barra-url { flex: 1 1 100%; }
-  .link-barra-acoes { margin-left: 0; }
-  .link-barra .longo { display: none; }
+  .link-barra-url { flex: 1 1 auto; min-width: 0; font-size: 13.5px; padding: 6px 10px; }
+  .link-barra-acoes { margin-left: 0; flex: none; }
+  .link-barra .longo,
+  .link-barra .curto-esconde { display: none; }
+  .link-barra .btn { min-height: 36px; }
+  .link-barra-off { display: none; }
 }
 
 /* campo de link: prefixo e texto lado a lado, sem sobrepor */
@@ -959,7 +962,18 @@
 @keyframes aviso-entra { from { transform: translateY(30px); opacity: 0; } }
 @keyframes aviso-pulso { 50% { box-shadow: 0 0 0 8px rgba(231, 247, 56, 0.25); } }
 @media (max-width: 900px) {
-  .aviso-novos { right: 12px; bottom: calc(var(--abas-mobile) + 12px); }
+  .aviso-novos {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: calc(var(--abas-mobile) + 12px + env(safe-area-inset-bottom));
+    max-height: calc(100dvh - var(--abas-mobile) - 120px);
+    overflow-y: auto;
+  }
+  /* no celular mostra só os 2 primeiros para não cobrir a agenda */
+  .aviso-novos li:nth-child(n + 3) { display: none; }
+  .aviso-novos ul { margin: 10px 0; }
+  .aviso-novos-acoes .btn { min-height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .aviso-novos, .aviso-novos-ico { animation: none; }

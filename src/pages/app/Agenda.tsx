@@ -80,9 +80,18 @@ export default function Agenda() {
         <div className="agenda-data">
           <button className="btn btn-sec btn-icone" aria-label={visao === 'dia' ? 'Dia anterior' : 'Semana anterior'} onClick={() => setDia(somaDias(dia, -passo))}><ChevronLeft size={18} /></button>
           <button className="btn btn-sec btn-icone" aria-label={visao === 'dia' ? 'Próximo dia' : 'Próxima semana'} onClick={() => setDia(somaDias(dia, passo))}><ChevronRight size={18} /></button>
-          <h1>
-            {visao === 'dia' ? (pequeno ? `${nomeDiaCurto(dia.getDay())}, ${dia.getDate()}` : dataLonga(dia)) : `Semana de ${somaDias(dia, -dia.getDay()).getDate()} a ${somaDias(dia, 6 - dia.getDay()).getDate()}`}
-          </h1>
+          {pequeno ? (
+            <label className="agenda-data-escolher">
+              <h1>{`${nomeDiaCurto(dia.getDay())}, ${dia.getDate()}`}</h1>
+              <span className="mes">{dia.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</span>
+              <input type="date" aria-label="Escolher o dia" value={isoDia(dia)}
+                onChange={(e) => { if (!e.target.value) return; const [a, m, d] = e.target.value.split('-').map(Number); setDia(new Date(a, m - 1, d)) }} />
+            </label>
+          ) : (
+            <h1>
+              {visao === 'dia' ? dataLonga(dia) : `Semana de ${somaDias(dia, -dia.getDay()).getDate()} a ${somaDias(dia, 6 - dia.getDay()).getDate()}`}
+            </h1>
+          )}
           {!ehHoje && <button className="btn btn-fantasma btn-pequeno" onClick={() => setDia(hoje())}>Hoje</button>}
           {ehHoje && visao === 'dia' && !pequeno && <span className="rel">hoje</span>}
         </div>
@@ -93,11 +102,38 @@ export default function Agenda() {
           {faltas > 0 && <span><b>{faltas}</b> {faltas === 1 ? 'falta' : 'faltas'}</span>}
           <span><b>{dinheiroCurto(previsto)}</b> previsto</span>
         </div>
-        <div className="linha-flex" style={{ gap: 8, marginLeft: pequeno ? 'auto' : 0 }}>
-          {!pequeno && <button className="btn btn-sec" onClick={() => setBloqueio(true)}><Lock /> Bloquear</button>}
+        <div className="linha-flex agenda-botoes" style={{ gap: 8, marginLeft: pequeno ? 'auto' : 0 }}>
+          {pequeno
+            ? <button className="btn btn-sec btn-icone" aria-label="Bloquear horário" title="Bloquear horário" onClick={() => setBloqueio(true)}><Lock size={18} /></button>
+            : <button className="btn btn-sec" onClick={() => setBloqueio(true)}><Lock /> Bloquear</button>}
           <button className="btn btn-primario" onClick={() => setNovo({ dia })}><Plus /> {pequeno ? 'Novo' : 'Novo horário'}</button>
         </div>
       </div>
+
+      {/* ---------- celular: tira com os dias da semana e resumo do dia */}
+      {pequeno && (
+        <div className="agenda-semana-mobile">
+          <div className="dias-tira" role="group" aria-label="Dia da semana">
+            {Array.from({ length: 7 }, (_, i) => somaDias(dia, i - dia.getDay())).map((d) => {
+              const qtd = estado.agendamentos.filter((a) => mesmoDia(new Date(a.inicio), d) && a.status !== 'cancelado' && a.status !== 'faltou').length
+              return (
+                <button key={isoDia(d)} aria-pressed={mesmoDia(d, dia)} className={mesmoDia(d, hoje()) ? 'eh-hoje' : ''} onClick={() => setDia(d)}
+                  aria-label={`${dataLonga(d)}, ${qtd} ${qtd === 1 ? 'horário' : 'horários'}`}>
+                  {nomeDiaCurto(d.getDay())}
+                  <b>{d.getDate()}</b>
+                  <i className="qtd">{qtd > 0 ? qtd : ''}</i>
+                </button>
+              )
+            })}
+          </div>
+          <div className="agenda-resumo-mobile" aria-label="Resumo do dia">
+            <span><b>{doDia.length - faltas}</b> horários</span>
+            <span><b>{feitos}</b> atendidos</span>
+            {faltas > 0 && <span><b>{faltas}</b> {faltas === 1 ? 'falta' : 'faltas'}</span>}
+            <span><b>{dinheiroCurto(previsto)}</b> previsto</span>
+          </div>
+        </div>
+      )}
 
       {/* ---------- celular: um barbeiro por vez, em lista */}
       {pequeno && (

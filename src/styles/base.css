@@ -151,3 +151,35 @@ h2,
     transition-delay: 0ms !important;
   }
 }
+
+/* ---------- celular: sem zoom e sem atraso no toque
+   O iPhone dá zoom sozinho em qualquer campo com letra menor que 16px
+   e no toque duplo. Aqui a tela fica sempre em 100%. */
+html,
+body {
+  touch-action: manipulation;
+  overscroll-behavior-x: none;
+}
+body {
+  overflow-x: hidden;
+}
+button,
+a,
+input,
+select,
+textarea,
+label,
+[role='button'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (max-width: 900px), (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  .input,
+  .select,
+  .textarea {
+    font-size: 16px !important;
+  }
+}

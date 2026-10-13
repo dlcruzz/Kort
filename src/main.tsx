@@ -16,6 +16,22 @@ import './styles/publico.css'
 import './styles/site.css'
 import './styles/movimento.css'
 
+// Tela travada em 100% no celular: o Safari do iPhone ignora o
+// user-scalable=no do viewport, então a pinça e o toque duplo são barrados aqui.
+const travar = (e: Event) => e.preventDefault()
+document.addEventListener('gesturestart', travar, { passive: false })
+document.addEventListener('gesturechange', travar, { passive: false })
+document.addEventListener('gestureend', travar, { passive: false })
+document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault() }, { passive: false })
+let ultimoToque = 0
+document.addEventListener('touchend', (e) => {
+  const agora = Date.now()
+  const alvo = e.target as HTMLElement | null
+  const campo = alvo?.closest('input, textarea, select, [contenteditable="true"]')
+  if (!campo && agora - ultimoToque < 300) e.preventDefault()
+  ultimoToque = agora
+}, { passive: false })
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

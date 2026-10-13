@@ -100,11 +100,11 @@ export default function Relatorios() {
       />
 
       <section className="painel" style={{ background: 'var(--kort)', borderColor: 'var(--preto)', borderWidth: 1.5, boxShadow: '4px 4px 0 var(--preto)', marginBottom: 20 }}>
-        <div className="painel-corpo" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.3fr)', gap: 24, alignItems: 'center' }}>
+        <div className="painel-corpo rel-mesa">
           <div>
             <h2 className="display" style={{ fontSize: 34 }}>Dinheiro na mesa</h2>
             <p style={{ fontSize: 14, marginTop: 6, maxWidth: '40ch' }}>O que o Kort trouxe de volta {nomePeriodo}, calculado pelo seu ticket médio de {dinheiroCurto(ticket)}.</p>
-            <div className="display num" style={{ fontSize: 56, marginTop: 14 }}><TextoContado texto={dinheiroCurto(recuperado)} ms={1100} /></div>
+            <div className="display num rel-mesa-valor"><TextoContado texto={dinheiroCurto(recuperado)} ms={1100} /></div>
           </div>
           <ul className="lista" style={{ background: 'var(--branco)', border: '1.5px solid var(--preto)', borderRadius: 8, padding: '2px 14px' }}>
             <li><span className="cresce"><b>{faltasEvitadas}</b> faltas evitadas pelos lembretes</span><b className="num">{dinheiroCurto(faltasEvitadas * ticket)}</b></li>

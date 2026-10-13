@@ -300,6 +300,8 @@
   position: fixed;
   left: 0;
   right: 0;
+  width: 100%;
+  box-sizing: border-box;
   bottom: 0;
   z-index: 20;
   background: rgba(8, 8, 8, 0.94);
@@ -309,6 +311,7 @@
 }
 .pub-resumo-in {
   max-width: 640px;
+  min-width: 0;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -327,6 +330,10 @@
 }
 .pub-resumo .btn {
   margin-left: auto;
+  flex: none;
+}
+.pub-resumo-in > div:first-child {
+  min-width: 0;
 }
 
 /* bilhete de confirmação */

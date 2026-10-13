@@ -35,13 +35,13 @@ export function LinkAgendamento() {
         {dominio()}/b/<b>{b.slug}</b>
       </a>
       <div className="link-barra-acoes">
-        <button className="btn btn-primario btn-pequeno" onClick={copiar}>
-          {copiado ? <Check size={15} /> : <Copy size={15} />} {copiado ? 'Copiado' : 'Copiar'}
+        <button className="btn btn-primario btn-pequeno" onClick={copiar} aria-label="Copiar link">
+          {copiado ? <Check size={15} /> : <Copy size={15} />} <span className="curto-esconde">{copiado ? 'Copiado' : 'Copiar'}</span>
         </button>
-        <a className="btn btn-sec btn-pequeno" href={`https://wa.me/?text=${encodeURIComponent(texto)}`} target="_blank" rel="noreferrer">
-          <MessageCircle size={15} /> <span className="longo">Mandar no </span>WhatsApp
+        <a className="btn btn-sec btn-pequeno" href={`https://wa.me/?text=${encodeURIComponent(texto)}`} target="_blank" rel="noreferrer" aria-label="Mandar no WhatsApp">
+          <MessageCircle size={15} /> <span className="longo">Mandar no WhatsApp</span>
         </a>
-        <a className="btn btn-fantasma btn-pequeno btn-icone-txt" href={link} target="_blank" rel="noreferrer" aria-label="Abrir minha página">
+        <a className="btn btn-fantasma btn-pequeno btn-icone-txt curto-esconde" href={link} target="_blank" rel="noreferrer" aria-label="Abrir minha página">
           <ExternalLink size={15} />
         </a>
       </div>
