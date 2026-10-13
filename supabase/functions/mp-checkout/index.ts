@@ -40,7 +40,6 @@ Deno.serve(async (req) => {
   if (error || !fatura) return json({ erro: error?.message ?? 'Não foi possível gerar a cobrança.' }, 400)
 
   const { data: bar } = await sb.from('barbearias').select('nome').eq('id', corpo.barbearia_id).single()
-  const { data: user } = await sb.auth.getUser()
 
   // Volta para o mesmo site de onde o barbeiro saiu
   let origem = 'https://kort-six.vercel.app'
@@ -58,7 +57,6 @@ Deno.serve(async (req) => {
       currency_id: 'BRL',
       unit_price: fatura.valor_centavos / 100,
     }],
-    payer: user?.user?.email ? { email: user.user.email } : undefined,
     external_reference: fatura.id,
     notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
     back_urls: {
