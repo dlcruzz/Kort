@@ -45,7 +45,8 @@ export function ExigeAdmin({ children }: { children: ReactNode }) {
   const sessao = useSessao()
   if (sessao.modo === 'demo') return <>{children}</>
   if (!sessao.pronto) return <TelaCarregando />
-  if (!sessao.usuario || !sessao.perfil?.super_admin) return <Navigate to="/admin/entrar" replace />
+  // quem não é admin nem fica sabendo que o painel existe
+  if (!sessao.usuario || !sessao.perfil?.super_admin) return <Navigate to="/" replace />
   return <>{children}</>
 }
 

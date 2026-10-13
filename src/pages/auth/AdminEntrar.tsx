@@ -5,9 +5,13 @@ import { supabase } from '../../lib/supabase'
 import { useSessao } from '../../lib/sessao'
 import { erroAuth } from './Entrar'
 
-// Login do painel interno do Kort (/admin/entrar). Separado do login dos
-// barbeiros: só entra quem é super admin (perfis.super_admin). Qualquer
-// outra conta é recusada e desconectada.
+// Login do painel interno do Kort, num endereço que só o dono conhece
+// (ROTA_LOGIN_ADMIN). Não tem cadastro: a conta de admin é criada no
+// painel do Supabase e marcada com perfis.super_admin = true por SQL.
+// Qualquer outra conta é recusada e desconectada. O endereço escondido é
+// só uma camada a mais: quem protege de verdade é o banco (RLS).
+
+export const ROTA_LOGIN_ADMIN = '/k-n11d8sw9b9'
 
 async function ehSuperAdmin(id: string) {
   const { data } = await supabase!.from('perfis').select('super_admin').eq('id', id).maybeSingle()
@@ -17,7 +21,6 @@ async function ehSuperAdmin(id: string) {
 export default function AdminEntrar() {
   const nav = useNavigate()
   const sessao = useSessao()
-  const [modo, setModo] = useState<'entrar' | 'primeiro'>('entrar')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
@@ -29,9 +32,7 @@ export default function AdminEntrar() {
     if (!supabase) return nav('/admin')
     if (!email.includes('@') || senha.length < 6) return setErro('Confira o e-mail e a senha (mínimo 6 caracteres).')
     setEnviando(true)
-    const r = modo === 'entrar'
-      ? await supabase.auth.signInWithPassword({ email: email.trim(), password: senha })
-      : await supabase.auth.signUp({ email: email.trim(), password: senha, options: { data: { nome: 'Kort' } } })
+    const r = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha })
     if (r.error || !r.data.user) {
       setEnviando(false)
       return setErro(erroAuth(r.error?.message ?? 'Não foi possível entrar.'))
@@ -39,7 +40,7 @@ export default function AdminEntrar() {
     if (!(await ehSuperAdmin(r.data.user.id))) {
       await supabase.auth.signOut()
       setEnviando(false)
-      return setErro('Esse acesso é só da equipe Kort. Barbeiro entra pela tela normal de login.')
+      return setErro('E-mail ou senha errados.')
     }
     await sessao.recarregar()
     nav('/admin', { replace: true })
@@ -49,31 +50,21 @@ export default function AdminEntrar() {
     <div className="auth auth-admin">
       <aside className="auth-lado">
         <Link to="/" aria-label="Kort, página inicial"><img src="/logo-marca.png" alt="Kort" /></Link>
-        <blockquote>
-          Painel interno
-          <cite>Barbearias, uso das funções, mensalidades e sugestões.</cite>
-        </blockquote>
+        <span />
         <span />
       </aside>
       <div className="auth-form">
         <form onSubmit={enviar} noValidate>
-          <h1>{modo === 'entrar' ? 'Painel Kort' : 'Primeiro acesso'}</h1>
-          <p className="muted" style={{ marginTop: -6 }}>
-            {modo === 'entrar' ? 'Acesso do super administrador.' : 'Crie a senha do painel com o e-mail de administrador do Kort.'}
-          </p>
+          <h1>Painel Kort</h1>
           <Campo rotulo="E-mail" id="adm-email">
             <input id="adm-email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           </Campo>
           <Campo rotulo="Senha" id="adm-senha" erro={erro}>
-            <input id="adm-senha" className="input" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'} />
+            <input id="adm-senha" className="input" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="current-password" />
           </Campo>
           <button className="btn btn-escuro btn-grande btn-bloco" type="submit" disabled={enviando}>
-            {enviando ? 'Entrando...' : modo === 'entrar' ? 'Entrar no painel' : 'Criar senha e entrar'}
+            {enviando ? 'Entrando...' : 'Entrar'}
           </button>
-          <button type="button" className="btn btn-fantasma btn-pequeno" style={{ alignSelf: 'center' }} onClick={() => { setModo(modo === 'entrar' ? 'primeiro' : 'entrar'); setErro('') }}>
-            {modo === 'entrar' ? 'Primeiro acesso? Criar senha' : 'Já tenho senha'}
-          </button>
-          <p className="troca pequeno">É barbeiro? <Link to="/entrar">Entre por aqui</Link></p>
         </form>
       </div>
     </div>
