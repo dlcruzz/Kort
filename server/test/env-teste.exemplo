@@ -1,0 +1,11 @@
+# Banco só para testes (será APAGADO e recriado a cada execução).
+# Exemplo com Docker:  docker run -d -p 5499:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16
+NODE_ENV=test
+DATABASE_URL=postgres://postgres@127.0.0.1:5499/kort_teste
+SUPABASE_JWT_SECRET=segredo-de-teste-com-mais-de-32-caracteres
+TOKEN_SECRET=token-secreto-dos-testes-123456
+PIX_CHAVE=pix@kort.app
+LINK_PUBLICO_BASE=https://kort.app
+WEBHOOK_TOKEN=token-do-webhook
+ROTINAS_ATIVAS=false
+FUSO=America/Sao_Paulo

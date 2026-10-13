@@ -1,0 +1,373 @@
+import { useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft, Check, MapPin, Star, Clock3, Instagram, CalendarPlus } from 'lucide-react'
+import { useKort, useMapas } from '../../lib/store'
+import { horariosLivres, type Slot } from '../../lib/agenda'
+import {
+  dataLonga, dinheiroCurto, hhmmParaMin, hoje, isoDia, mascaraTelefone, nomeDiaCurto, plural, somaDias, telefoneE164,
+  minParaHhmm, primeiroNome,
+} from '../../lib/format'
+import { Avatar, Campo } from '../../components/ui'
+import { atraso, TextoContado } from '../../lib/movimento'
+import type { Agendamento } from '../../lib/types'
+
+type Passo = 1 | 2 | 3 | 4 | 5
+const QUALQUER = 'qualquer'
+
+export default function Agendar() {
+  const { slug } = useParams()
+  const { estado, acoes } = useKort()
+  const { membro: mapaMembro } = useMapas()
+  const b = estado.barbearia
+
+  const [passo, setPasso] = useState<Passo>(1)
+  const [servicoIds, setServicoIds] = useState<string[]>([])
+  const [membroId, setMembroId] = useState<string>('')
+  const [dia, setDia] = useState<Date>(hoje())
+  const [slot, setSlot] = useState<Slot | null>(null)
+  const [nome, setNome] = useState('')
+  const [tel, setTel] = useState('')
+  const [obs, setObs] = useState('')
+  const [erros, setErros] = useState<{ nome?: string; tel?: string }>({})
+  const [criado, setCriado] = useState<Agendamento | null>(null)
+  const [dir, setDir] = useState<'frente' | 'tras'>('frente')
+
+  const servicosAtivos = estado.servicos.filter((s) => s.ativo).sort((a, c) => a.ordem - c.ordem)
+  const escolhidos = servicoIds.map((id) => estado.servicos.find((s) => s.id === id)!).filter(Boolean)
+  const duracao = escolhidos.reduce((t, s) => t + s.duracao_min, 0)
+  const total = escolhidos.reduce((t, s) => t + s.preco_centavos, 0)
+
+  // barbeiros que fazem TODOS os serviços escolhidos
+  const barbeiros = estado.membros
+    .filter((m) => m.ativo && m.atende)
+    .filter((m) => escolhidos.every((s) => s.membros.includes(m.id)))
+    .sort((a, c) => a.ordem - c.ordem)
+
+  const dias = useMemo(() => Array.from({ length: b.antecedencia_max_dias }, (_, i) => somaDias(hoje(), i)), [b.antecedencia_max_dias])
+
+  // horários livres: de um barbeiro ou a união de todos (com quem atende)
+  const livres = useMemo(() => {
+    if (!duracao || !membroId) return [] as Array<Slot & { membroId: string }>
+    const quem = membroId === QUALQUER ? barbeiros.map((m) => m.id) : [membroId]
+    const mapa = new Map<number, Slot & { membroId: string }>()
+    for (const id of quem) {
+      for (const s of horariosLivres({ dia, membroId: id, duracao, jornadas: estado.jornadas, agendamentos: estado.agendamentos, bloqueios: estado.bloqueios, grade: b.intervalo_slots_min })) {
+        if (!mapa.has(s.minuto)) mapa.set(s.minuto, { ...s, membroId: id })
+      }
+    }
+    return [...mapa.values()].sort((x, y) => x.minuto - y.minuto)
+  }, [duracao, membroId, dia, estado.jornadas, estado.agendamentos, estado.bloqueios, barbeiros, b.intervalo_slots_min])
+
+  const diaFechado = (d: Date) => !estado.horarios.some((h) => h.dia_semana === d.getDay())
+
+  if (slug !== b.slug || !b.publicada) {
+    return (
+      <div className="pub">
+        <div className="pub-wrap" style={{ paddingTop: 80 }}>
+          <h1 className="display" style={{ fontSize: 48 }}>Página não encontrada</h1>
+          <p style={{ color: 'var(--txt-2)', marginTop: 12 }}>Confira o link com a barbearia. O endereço é kort.app/b/ seguido do nome dela.</p>
+          <Link className="btn btn-primario" style={{ marginTop: 24 }} to={`/b/${b.slug}`}>Ver barbearia de exemplo</Link>
+        </div>
+      </div>
+    )
+  }
+
+  const notas = estado.avaliacoes
+  const media = notas.length ? notas.reduce((t, a) => t + a.nota, 0) / notas.length : 0
+  const horarioHoje = estado.horarios.find((h) => h.dia_semana === new Date().getDay())
+  const agoraMin = new Date().getHours() * 60 + new Date().getMinutes()
+  const abertoAgora = horarioHoje && agoraMin >= hhmmParaMin(horarioHoje.abre) && agoraMin < hhmmParaMin(horarioHoje.fecha)
+
+  const alternarServico = (id: string) =>
+    setServicoIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
+
+  const avancar = () => {
+    setDir('frente')
+    if (passo === 1) {
+      setMembroId(barbeiros.length === 1 ? barbeiros[0].id : '')
+      setPasso(barbeiros.length === 1 ? 3 : 2)
+    } else if (passo === 2) setPasso(3)
+    else if (passo === 3) setPasso(4)
+    else if (passo === 4) confirmar()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const confirmar = () => {
+    const e: typeof erros = {}
+    if (nome.trim().length < 2) e.nome = 'Escreva seu nome para o barbeiro saber quem é.'
+    if (tel.replace(/\D/g, '').length < 10) e.tel = 'Confira o número com DDD. É por ele que chega a confirmação.'
+    setErros(e)
+    if (Object.keys(e).length || !slot) return
+    const quem = membroId === QUALQUER ? (livres.find((l) => l.minuto === slot.minuto)?.membroId ?? barbeiros[0].id) : membroId
+    const inicio = new Date(dia)
+    inicio.setHours(0, slot.minuto, 0, 0)
+    const ag = acoes.criarAgendamento({
+      novoCliente: { nome: nome.trim(), telefone: telefoneE164(tel) },
+      membroId: quem,
+      inicio,
+      servicoIds,
+      origem: 'link',
+      observacao: obs.trim() || undefined,
+    })
+    setCriado(ag)
+    setPasso(5)
+  }
+
+  const podeAvancar =
+    (passo === 1 && servicoIds.length > 0) || (passo === 2 && !!membroId) || (passo === 3 && !!slot) || passo === 4
+
+  const voltar = () => {
+    setDir('tras')
+    if (passo === 3 && barbeiros.length === 1) setPasso(1)
+    else setPasso((p) => (p > 1 ? ((p - 1) as Passo) : p))
+  }
+
+  const periodos = [
+    { nome: 'Manhã', de: 0, ate: 12 * 60 },
+    { nome: 'Tarde', de: 12 * 60, ate: 18 * 60 },
+    { nome: 'Noite', de: 18 * 60, ate: 24 * 60 },
+  ]
+
+  const linkAgenda = criado
+    ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${criado.servicos.map((s) => s.nome).join(' + ')} na ${b.nome}`)}&dates=${new Date(criado.inicio).toISOString().replace(/[-:]|\.\d{3}/g, '')}/${new Date(criado.fim).toISOString().replace(/[-:]|\.\d{3}/g, '')}&location=${encodeURIComponent(`${b.logradouro}, ${b.numero} - ${b.bairro}, ${b.cidade}`)}`
+    : '#'
+
+  return (
+    <div className="pub">
+      <div className="pub-wrap">
+        <header className="pub-capa">
+          <h1>{b.nome}</h1>
+          {passo === 1 && <p className="desc">{b.descricao}</p>}
+          <div className="pub-info">
+            {media > 0 && (
+              <span className="pub-nota">
+                <Star size={15} /> {media.toFixed(1).replace('.', ',')} <span style={{ color: 'var(--txt-2)', fontWeight: 400 }}>({notas.length})</span>
+              </span>
+            )}
+            <span>
+              <Clock3 />
+              {horarioHoje ? (abertoAgora ? `Aberto até ${horarioHoje.fecha}` : `Hoje das ${horarioHoje.abre} às ${horarioHoje.fecha}`) : 'Fechado hoje'}
+            </span>
+            <span>
+              <MapPin />
+              <a href={`https://maps.google.com/?q=${encodeURIComponent(`${b.logradouro}, ${b.numero} ${b.bairro} ${b.cidade}`)}`} target="_blank" rel="noreferrer">
+                {b.logradouro}, {b.numero} | {b.bairro}
+              </a>
+            </span>
+            {b.instagram && (
+              <span>
+                <Instagram />
+                <a href={`https://instagram.com/${b.instagram.replace('@', '')}`} target="_blank" rel="noreferrer">{b.instagram}</a>
+              </span>
+            )}
+          </div>
+        </header>
+
+        {passo < 5 && (
+          <div className="pub-passos" aria-hidden="true">
+            {[1, 2, 3, 4].map((n) => <span key={n} className={n <= passo ? 'feito' : ''} />)}
+          </div>
+        )}
+        {passo > 1 && passo < 5 && (
+          <button className="pub-voltar" onClick={voltar}>
+            <ArrowLeft /> Voltar
+          </button>
+        )}
+
+        <div key={passo} className={dir === 'frente' ? 'passo-frente' : 'passo-tras'}>
+        {/* 1. serviços */}
+        {passo === 1 && (
+          <section>
+            <div className="pub-passo-tit"><span className="n">1</span><h2>O que vai fazer?</h2></div>
+            <div className="pub-opcoes" role="group" aria-label="Serviços">
+              {servicosAtivos.map((s, i) => (
+                <button key={s.id} style={atraso(i)} className="pub-opcao" aria-pressed={servicoIds.includes(s.id)} onClick={() => alternarServico(s.id)}>
+                  <span className="t">{s.nome}</span>
+                  {s.descricao && <span className="d">{s.descricao}</span>}
+                  <span className="p">
+                    {dinheiroCurto(s.preco_centavos)}
+                    <small>{s.duracao_min} min</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p style={{ color: 'var(--txt-2)', fontSize: 13.5, marginTop: 12 }}>Pode escolher mais de um. O tempo e o valor somam.</p>
+
+            {notas.some((a) => a.publica && a.comentario) && (
+              <div className="pub-avaliacoes">
+                <h3>Quem já cortou aqui</h3>
+                {notas.filter((a) => a.publica && a.comentario).slice(0, 3).map((a) => {
+                  const c = estado.clientes.find((x) => x.id === a.cliente_id)
+                  return (
+                    <blockquote key={a.id}>
+                      {a.comentario}
+                      <cite>{c ? primeiroNome(c.nome) : 'Cliente'} com {mapaMembro.get(a.membro_id)?.nome_exibicao}</cite>
+                    </blockquote>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* 2. barbeiro */}
+        {passo === 2 && (
+          <section>
+            <div className="pub-passo-tit"><span className="n">2</span><h2>Com quem?</h2></div>
+            <div className="pub-opcoes" role="group" aria-label="Barbeiro">
+              {barbeiros.length > 1 && (
+                <button className="pub-opcao barbeiro" aria-pressed={membroId === QUALQUER} onClick={() => setMembroId(QUALQUER)}>
+                  <span className="avatar" style={{ ['--tam' as string]: '46px', background: 'var(--sup-2)', color: 'var(--kort)' }}>?</span>
+                  <span className="t">Quem estiver livre</span>
+                  <span className="d">Mostra mais horários</span>
+                  <span className="p" />
+                </button>
+              )}
+              {barbeiros.map((m, i) => (
+                <button key={m.id} style={atraso(i + 1)} className="pub-opcao barbeiro" aria-pressed={membroId === m.id} onClick={() => setMembroId(m.id)}>
+                  <Avatar nome={m.nome_exibicao} cor={m.cor_agenda} tam={46} />
+                  <span className="t">{m.nome_exibicao}</span>
+                  <span className="d">{m.bio}</span>
+                  <span className="p" />
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 3. dia e hora */}
+        {passo === 3 && (
+          <section>
+            <div className="pub-passo-tit"><span className="n">3</span><h2>Que dia e hora?</h2></div>
+            <div className="dias-tira" role="group" aria-label="Dia">
+              {dias.map((d) => (
+                <button
+                  key={isoDia(d)}
+                  aria-pressed={isoDia(d) === isoDia(dia)}
+                  disabled={diaFechado(d)}
+                  onClick={() => { setDia(d); setSlot(null) }}
+                  aria-label={dataLonga(d)}
+                >
+                  {nomeDiaCurto(d.getDay())}
+                  <b>{d.getDate()}</b>
+                </button>
+              ))}
+            </div>
+            <p style={{ margin: '16px 0 12px', fontWeight: 600 }}>{dataLonga(dia)}</p>
+            {livres.length === 0 ? (
+              <div className="pub-sem-horario">
+                Sem horário livre nesse dia para {plural(duracao, 'minuto', 'minutos')} de serviço.
+                <br />
+                <button className="btn btn-sec btn-pequeno" onClick={() => { const prox = dias.find((d) => d > dia && !diaFechado(d)); if (prox) { setDia(prox); setSlot(null) } }}>
+                  Ver o próximo dia
+                </button>
+              </div>
+            ) : (
+              periodos.map((p) => {
+                const doPeriodo = livres.filter((l) => l.minuto >= p.de && l.minuto < p.ate)
+                if (!doPeriodo.length) return null
+                return (
+                  <div key={p.nome}>
+                    <div className="slots-periodo">{p.nome}</div>
+                    <div className="slots" role="group" aria-label={`Horários da ${p.nome.toLowerCase()}`}>
+                      {doPeriodo.map((s, i) => (
+                        <button key={s.minuto} style={atraso(i, 18, 20)} aria-pressed={slot?.minuto === s.minuto} onClick={() => setSlot(s)}>
+                          {s.hhmm}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </section>
+        )}
+
+        {/* 4. dados */}
+        {passo === 4 && slot && (
+          <section>
+            <div className="pub-passo-tit"><span className="n">4</span><h2>Seus dados</h2></div>
+            <p style={{ color: 'var(--txt-2)', marginBottom: 18, fontSize: 14.5 }}>
+              {escolhidos.map((s) => s.nome).join(' + ')} {membroId !== QUALQUER && <>com {mapaMembro.get(membroId)?.nome_exibicao}</>}, {dataLonga(dia)} às {slot.hhmm}.
+            </p>
+            <div className="coluna gap-16">
+              <Campo rotulo="Seu nome" id="nome" erro={erros.nome}>
+                <input id="nome" className="input" value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" placeholder="Como o barbeiro te chama" />
+              </Campo>
+              <Campo rotulo="WhatsApp" id="tel" erro={erros.tel} ajuda="A confirmação e o lembrete chegam por aqui.">
+                <input id="tel" className="input" value={tel} onChange={(e) => setTel(mascaraTelefone(e.target.value))} inputMode="tel" autoComplete="tel" placeholder="(11) 90000-0000" />
+              </Campo>
+              <Campo rotulo="Recado para o barbeiro (opcional)" id="obs">
+                <textarea id="obs" className="textarea" value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Ex.: quero tirar bastante em cima" />
+              </Campo>
+            </div>
+            <p style={{ color: 'var(--txt-2)', fontSize: 12.5, marginTop: 14 }}>
+              Ao confirmar você aceita receber mensagens da {b.nome} sobre este horário. O pagamento é feito na barbearia.
+            </p>
+          </section>
+        )}
+
+        {/* 5. confirmado */}
+        {passo === 5 && criado && (
+          <section>
+            <div className="bilhete">
+              <span className="ok"><Check /> Horário marcado</span>
+              <h2>{minParaHhmm(new Date(criado.inicio).getHours() * 60 + new Date(criado.inicio).getMinutes())}</h2>
+              <div className="quando">{dataLonga(criado.inicio)}</div>
+              <dl>
+                <dt style={{ ['--i' as string]: 0 }}>Serviço</dt>
+                <dd style={{ ['--i' as string]: 1 }}>{criado.servicos.map((s) => s.nome).join(' + ')}</dd>
+                <dt style={{ ['--i' as string]: 2 }}>Barbeiro</dt>
+                <dd style={{ ['--i' as string]: 3 }}>{mapaMembro.get(criado.membro_id)?.nome_exibicao}</dd>
+                <dt style={{ ['--i' as string]: 4 }}>Valor</dt>
+                <dd style={{ ['--i' as string]: 5 }}>{dinheiroCurto(criado.valor_previsto_centavos)}, pago na hora</dd>
+                <dt style={{ ['--i' as string]: 6 }}>Endereço</dt>
+                <dd style={{ ['--i' as string]: 7 }}>{b.logradouro}, {b.numero}</dd>
+              </dl>
+            </div>
+            <p style={{ color: 'var(--txt-2)', fontSize: 14, marginTop: 18 }}>
+              Mandamos a confirmação no seu WhatsApp. Um dia antes chega um lembrete.
+            </p>
+            <div className="pub-acoes-final">
+              <a className="btn btn-sec" href={linkAgenda} target="_blank" rel="noreferrer"><CalendarPlus /> Pôr na agenda</a>
+              <Link className="btn btn-sec" to={`/b/${b.slug}/horario/${criado.id}`}>Mudar ou cancelar</Link>
+            </div>
+            <button
+              className="btn btn-fantasma btn-bloco"
+              style={{ color: 'var(--txt-2)', marginTop: 8 }}
+              onClick={() => { setPasso(1); setServicoIds([]); setSlot(null); setCriado(null); setMembroId('') }}
+            >
+              Marcar outro horário
+            </button>
+          </section>
+        )}
+
+        </div>
+
+        <footer className="pub-rodape">
+          <span>Agendamento online</span>
+          <Link to="/">
+            feito com <img src="/logo-sm.png" alt="Kort" />
+          </Link>
+        </footer>
+      </div>
+
+      {passo < 5 && (
+        <div className="pub-resumo">
+          <div className="pub-resumo-in">
+            <div>
+              <div className="tot"><TextoContado texto={total ? dinheiroCurto(total) : 'R$ 0'} ms={400} /></div>
+              <div className="det">
+                {escolhidos.length ? `${plural(escolhidos.length, 'serviço', 'serviços')}, ${duracao} min` : 'Escolha um serviço'}
+                {slot && passo >= 3 ? `, ${nomeDiaCurto(dia.getDay())} ${slot.hhmm}` : ''}
+              </div>
+            </div>
+            <button className="btn btn-primario btn-grande" disabled={!podeAvancar} onClick={avancar}>
+              {passo === 4 ? 'Confirmar horário' : 'Continuar'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

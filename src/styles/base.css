@@ -1,0 +1,153 @@
+/* =====================================================================
+   KORT  |  Tokens e base
+   Cores tiradas da logo: preto do fundo, amarelo-limão das letras,
+   cinza da sombra deslocada e o aço da navalha. O cinza da sombra vira
+   a "sombra de adesivo" (deslocada, sem desfoque) usada em poucos lugares.
+   ===================================================================== */
+
+:root {
+  --preto: #080808;
+  --asfalto: #171716;
+  --asfalto-2: #222220;
+  --concreto: #E6E5E0;
+  --papel: #F6F6F2;
+  --branco: #FFFFFF;
+  --linha: #CDCCC5;
+  --linha-fraca: #DCDBD5;
+  --grafite: #5B5B56;
+  --grafite-claro: #84847D;
+  --kort: #E7F738;
+  --kort-forte: #D3E322;
+  --kort-suave: #F4FBB4;
+  --sombra: #4D4D4A;
+  --lamina: #C9CAC6;
+
+  --ok: #2E6A3E;
+  --ok-fundo: #DCEBDD;
+  --alerta: #8F620C;
+  --alerta-fundo: #F5E7C6;
+  --perigo: #A63A26;
+  --perigo-fundo: #F4DCD5;
+  --info: #2B4F86;
+  --info-fundo: #DCE5F3;
+
+  --f-display: 'Big Shoulders Display Variable', 'Arial Narrow', sans-serif;
+  --f-texto: 'Schibsted Grotesk Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --r-campo: 6px;
+  --r-painel: 10px;
+  --r-folha: 14px;
+
+  --adesivo: 3px 3px 0 var(--preto);
+  --adesivo-cinza: 3px 3px 0 var(--sombra);
+
+  --rail: 236px;
+  --topo-mobile: 56px;
+  --abas-mobile: 64px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--f-texto);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--preto);
+  background: var(--concreto);
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+.display {
+  font-family: var(--f-display);
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  line-height: 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--preto);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--kort);
+  border-radius: 4px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.num {
+  /* A Schibsted Grotesk alarga a vírgula com 'tnum', então os números
+     ficam com algarismos normais e o alinhamento vem do text-align. */
+  font-variant-numeric: lining-nums;
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--grafite);
+}
+
+.pequeno {
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

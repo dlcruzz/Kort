@@ -1,0 +1,649 @@
+/* =====================================================================
+   Movimento
+   Regra da casa: o movimento conta alguma coisa. O título do site "cola"
+   como um adesivo, a agenda entra na ordem dos horários, o dinheiro sobe
+   contando, o pagamento ganha um carimbo. Nada piscando à toa.
+   Com "reduzir movimento" ligado no sistema, tudo isso é desligado
+   (regra no fim do base.css).
+   ===================================================================== */
+
+:root {
+  --mola: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --saida: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---------- utilitários */
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(var(--dist, 8px));
+  }
+}
+@keyframes surgir {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes crescerY {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes crescerX {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes estalar {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.revelar {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 500ms var(--saida), transform 500ms var(--saida);
+  transition-delay: var(--atraso, 0ms);
+}
+.revelar.visivel {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- troca de página no app: entra rápido e discreto */
+.entrada-pagina {
+  animation: subir 260ms var(--saida) both;
+  --dist: 6px;
+}
+
+/* listas e tabelas: as primeiras linhas entram em sequência */
+.entrada-pagina .tabela tbody tr,
+.entrada-pagina .lista > li {
+  animation: subir 320ms var(--saida) both;
+  --dist: 6px;
+}
+.entrada-pagina .tabela tbody tr:nth-child(1), .entrada-pagina .lista > li:nth-child(1) { animation-delay: 60ms; }
+.entrada-pagina .tabela tbody tr:nth-child(2), .entrada-pagina .lista > li:nth-child(2) { animation-delay: 90ms; }
+.entrada-pagina .tabela tbody tr:nth-child(3), .entrada-pagina .lista > li:nth-child(3) { animation-delay: 120ms; }
+.entrada-pagina .tabela tbody tr:nth-child(4), .entrada-pagina .lista > li:nth-child(4) { animation-delay: 150ms; }
+.entrada-pagina .tabela tbody tr:nth-child(5), .entrada-pagina .lista > li:nth-child(5) { animation-delay: 180ms; }
+.entrada-pagina .tabela tbody tr:nth-child(6), .entrada-pagina .lista > li:nth-child(6) { animation-delay: 210ms; }
+.entrada-pagina .tabela tbody tr:nth-child(7), .entrada-pagina .lista > li:nth-child(7) { animation-delay: 240ms; }
+.entrada-pagina .tabela tbody tr:nth-child(8), .entrada-pagina .lista > li:nth-child(8) { animation-delay: 270ms; }
+.entrada-pagina .tabela tbody tr:nth-child(n + 9), .entrada-pagina .lista > li:nth-child(n + 9) { animation-delay: 300ms; }
+
+/* ---------- menu lateral: o bloco amarelo desliza até o item escolhido */
+.rail-indicador {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 7px;
+  background: var(--kort);
+  box-shadow: var(--adesivo-cinza);
+  transition: transform 320ms var(--mola), opacity 160ms;
+  pointer-events: none;
+  z-index: 0;
+}
+.app.admin .rail-indicador {
+  background: var(--preto);
+}
+.rail .rail-item {
+  position: relative;
+  z-index: 1;
+}
+.rail .rail-item.active {
+  background: transparent;
+  box-shadow: none;
+}
+.rail-item svg {
+  transition: transform 200ms var(--mola);
+}
+.rail-item:hover svg {
+  transform: translateX(2px);
+}
+.rail-item.active svg {
+  transform: rotate(-8deg) scale(1.08);
+}
+
+/* ---------- abas: o traço cresce do centro */
+.abas button,
+.abas a {
+  position: relative;
+  border-bottom-color: transparent !important;
+  transition: color 150ms;
+}
+.abas button::after,
+.abas a::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--preto);
+  transform: scaleX(0);
+  transition: transform 240ms var(--saida);
+}
+.abas [aria-selected='true']::after,
+.abas a.active::after {
+  transform: scaleX(1);
+}
+.abas button:hover:not([aria-selected='true'])::after {
+  transform: scaleX(0.35);
+  background: var(--linha);
+}
+
+/* ---------- controles */
+.chip,
+.segmentos button,
+.slots button,
+.dias-tira button {
+  transition: background-color 140ms, color 140ms, border-color 140ms, box-shadow 160ms, transform 120ms;
+}
+.chip:active,
+.slots button:active,
+.dias-tira button:active {
+  transform: scale(0.95);
+}
+.chip[aria-pressed='true'],
+.slots button[aria-pressed='true'] {
+  animation: estalar 240ms var(--mola);
+}
+.btn svg {
+  transition: transform 180ms var(--mola);
+}
+.btn:hover:not(:disabled) svg {
+  transform: scale(1.12);
+}
+.btn-primario:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--preto);
+}
+.btn-primario:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--preto);
+}
+.pub .btn-primario:hover:not(:disabled),
+.heroi .btn-primario:hover:not(:disabled),
+.site-topo .btn-primario:hover:not(:disabled),
+.plano.destaque .btn-primario:hover:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--sombra);
+}
+.pub .btn-primario:active:not(:disabled),
+.heroi .btn-primario:active:not(:disabled),
+.site-topo .btn-primario:active:not(:disabled),
+.plano.destaque .btn-primario:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--sombra);
+}
+.modal {
+  animation: modalEntra 200ms var(--mola);
+}
+@keyframes modalEntra {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.96);
+  }
+}
+.aviso .ico {
+  animation: estalar 360ms 120ms var(--mola) both;
+}
+.tabela tbody tr.clicavel td {
+  transition: background-color 120ms;
+}
+
+/* ---------- números e barras */
+.barra > span {
+  transform-origin: left;
+  animation: crescerX 700ms var(--saida) both;
+  animation-delay: 150ms;
+}
+.grafico-barra {
+  transform-origin: bottom;
+  animation: crescerY 600ms var(--saida) both;
+  animation-delay: var(--atraso, 0ms);
+}
+.calor-celula {
+  animation: surgir 400ms ease both;
+  animation-delay: var(--atraso, 0ms);
+}
+
+/* ---------- agenda */
+.ag,
+.dia-lista .item,
+.dia-lista .livre,
+.semana-dia li {
+  animation: subir 300ms var(--saida) both;
+  --dist: 6px;
+  animation-delay: var(--atraso, 0ms);
+}
+.agora span::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 5px;
+  border: 2px solid var(--kort);
+  animation: pulso 2.4s ease-out infinite;
+}
+@keyframes pulso {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+/* ---------- carimbo de pago na comanda */
+.carimbo {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: rgba(246, 246, 242, 0.82);
+  pointer-events: none;
+  animation: surgir 120ms ease both;
+}
+.carimbo span {
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-size: 64px;
+  line-height: 1;
+  padding: 10px 26px 6px;
+  color: var(--ok);
+  border: 5px solid var(--ok);
+  border-radius: 10px;
+  transform: rotate(-9deg);
+  animation: carimbar 420ms var(--mola) both;
+}
+.carimbo small {
+  display: block;
+  font-family: var(--f-texto);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+@keyframes carimbar {
+  0% {
+    opacity: 0;
+    transform: rotate(-9deg) scale(2.2);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-9deg) scale(0.92);
+  }
+  100% {
+    transform: rotate(-9deg) scale(1);
+  }
+}
+
+/* =====================================================================
+   Página pública
+   ===================================================================== */
+.pub-capa h1 {
+  animation: colar 520ms var(--mola) both;
+  transform-origin: left bottom;
+}
+@keyframes colar {
+  from {
+    opacity: 0;
+    transform: scale(1.12) rotate(-3deg);
+  }
+}
+.pub-info span {
+  animation: subir 400ms var(--saida) both;
+  animation-delay: 220ms;
+}
+.pub-passos span {
+  position: relative;
+  overflow: hidden;
+  background: var(--borda) !important;
+}
+.pub-passos span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--kort);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 420ms var(--saida);
+}
+.pub-passos span.feito::after {
+  transform: scaleX(1);
+}
+
+/* troca de passo: entra pelo lado certo */
+.passo-frente {
+  animation: daDireita 320ms var(--saida) both;
+}
+.passo-tras {
+  animation: daEsquerda 320ms var(--saida) both;
+}
+@keyframes daDireita {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes daEsquerda {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+.pub-opcoes > *,
+.slots > button {
+  animation: subir 320ms var(--saida) both;
+  animation-delay: var(--atraso, 0ms);
+}
+.pub-opcao {
+  transition: border-color 150ms, background-color 150ms, box-shadow 220ms var(--saida), transform 150ms;
+}
+.pub-opcao:active {
+  transform: scale(0.985);
+}
+.pub-opcao[aria-pressed='true'] .p {
+  animation: estalar 280ms var(--mola);
+}
+.pub-passo-tit .n {
+  animation: colar 420ms var(--mola) both;
+}
+.pub-resumo {
+  animation: subir 360ms 200ms var(--saida) both;
+  --dist: 100%;
+}
+
+/* bilhete: cai na tela como um ticket e o check se desenha */
+.bilhete {
+  animation: bilhete 620ms var(--mola) both;
+  transform-origin: top center;
+}
+@keyframes bilhete {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px) rotate(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.bilhete .ok svg path,
+.bilhete .ok svg polyline {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: desenhar 420ms 420ms ease forwards;
+}
+@keyframes desenhar {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.bilhete h2 {
+  animation: colar 480ms 260ms var(--mola) both;
+}
+.bilhete dl > * {
+  animation: surgir 300ms both;
+  animation-delay: calc(500ms + var(--i, 0) * 50ms);
+}
+
+/* =====================================================================
+   Site
+   Um único momento orquestrado na abertura: as palavras do título colam
+   uma a uma, o celular sobe, o horário é escolhido e o botão é apertado.
+   ===================================================================== */
+.heroi h1 .palavra {
+  display: inline-block;
+  animation: colarTitulo 560ms var(--mola) both;
+  animation-delay: calc(var(--i) * 110ms + 80ms);
+}
+@keyframes colarTitulo {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px) scale(1.25) rotate(-6deg);
+    text-shadow: 0 0 0 var(--sombra);
+  }
+  70% {
+    opacity: 1;
+    text-shadow: 6px 6px 0 var(--sombra);
+  }
+  100% {
+    transform: none;
+    text-shadow: 5px 5px 0 var(--sombra);
+  }
+}
+.heroi .lead,
+.heroi .acoes,
+.heroi .nota {
+  animation: subir 500ms var(--saida) both;
+  animation-delay: 620ms;
+}
+.heroi .acoes {
+  animation-delay: 720ms;
+}
+.heroi .nota {
+  animation-delay: 820ms;
+}
+.celular {
+  animation: celularSobe 800ms 450ms var(--mola) both;
+}
+@keyframes celularSobe {
+  from {
+    opacity: 0;
+    transform: translateY(80px) rotate(10deg);
+  }
+  to {
+    transform: rotate(2.5deg);
+  }
+}
+@media (max-width: 960px) {
+  @keyframes celularSobe {
+    from {
+      opacity: 0;
+      transform: translateY(60px);
+    }
+    to {
+      transform: none;
+    }
+  }
+}
+.celular-tela .slots span {
+  animation: surgir 300ms both;
+  animation-delay: calc(1100ms + var(--i, 0) * 60ms);
+}
+.celular-tela .slots span.sel {
+  animation: escolher 2.2s 1100ms both;
+}
+@keyframes escolher {
+  0%,
+  45% {
+    background: transparent;
+    color: var(--papel);
+    border-color: #2c2c2a;
+    transform: scale(1);
+  }
+  52% {
+    transform: scale(0.88);
+  }
+  60%,
+  100% {
+    background: var(--kort);
+    color: var(--preto);
+    border-color: var(--kort);
+    transform: scale(1);
+  }
+}
+.celular-tela .cta {
+  position: relative;
+  animation: apertar 3.2s 1100ms both;
+}
+@keyframes apertar {
+  0%,
+  88% {
+    transform: none;
+    box-shadow: 3px 3px 0 var(--sombra);
+  }
+  92% {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--sombra);
+  }
+  100% {
+    transform: none;
+    box-shadow: 3px 3px 0 var(--sombra);
+  }
+}
+.celular-aviso {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px 9px 10px;
+  border-radius: 10px;
+  background: var(--papel);
+  color: var(--preto);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 4px 4px 0 var(--sombra);
+  animation: avisoCelular 600ms 4.25s var(--mola) both;
+}
+.celular-aviso i {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--kort);
+  border: 1.5px solid var(--preto);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 11px;
+}
+@keyframes avisoCelular {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.8);
+  }
+}
+.celular {
+  position: relative;
+}
+
+/* linha do tempo do dia: cada hora entra quando chega na tela */
+.dia-linha .hr,
+.dia-linha .ev {
+  opacity: 0;
+  transition: opacity 500ms var(--saida), transform 500ms var(--saida);
+}
+.dia-linha .hr {
+  transform: translateX(-24px);
+}
+.dia-linha .ev {
+  transform: translateY(12px);
+  transition-delay: 120ms;
+}
+.dia-linha.visivel .hr,
+.dia-linha.visivel .ev {
+  opacity: 1;
+  transform: none;
+}
+.dia-linha .whats {
+  transform-origin: bottom left;
+  transform: scale(0.85);
+  opacity: 0;
+  transition: transform 420ms 380ms var(--mola), opacity 300ms 380ms;
+}
+.dia-linha.visivel .whats {
+  transform: none;
+  opacity: 1;
+}
+.dia-linha .hr span {
+  display: inline-block;
+}
+
+/* recibo: imprime linha por linha */
+.recibo .ln,
+.recibo .tt {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 320ms, transform 320ms var(--saida);
+  transition-delay: calc(var(--i, 0) * 260ms + 200ms);
+}
+.recibo.visivel .ln,
+.recibo.visivel .tt {
+  opacity: 1;
+  transform: none;
+}
+.recibo {
+  transition: transform 500ms var(--mola), box-shadow 500ms;
+  transform: rotate(-1.5deg);
+}
+.recibo.visivel {
+  transform: rotate(0.8deg);
+}
+
+/* planos: passar o mouse levanta o cartão como adesivo */
+.plano {
+  transition: transform 200ms var(--mola), box-shadow 200ms, background-color 200ms;
+  position: relative;
+}
+.plano:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 6px 6px 0 var(--preto);
+  z-index: 1;
+}
+.plano.destaque:hover {
+  box-shadow: 6px 6px 0 var(--sombra);
+}
+.site-topo nav a {
+  position: relative;
+}
+.site-topo nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  background: var(--kort);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms var(--saida);
+}
+.site-topo nav a:hover::after {
+  transform: scaleX(1);
+}
+
+/* telas de entrada */
+.auth-lado blockquote {
+  animation: colar 600ms 150ms var(--mola) both;
+  transform-origin: left bottom;
+}
+.auth-form form > * {
+  animation: subir 380ms var(--saida) both;
+}
+.auth-form form > *:nth-child(2) { animation-delay: 40ms; }
+.auth-form form > *:nth-child(3) { animation-delay: 80ms; }
+.auth-form form > *:nth-child(4) { animation-delay: 120ms; }
+.auth-form form > *:nth-child(5) { animation-delay: 160ms; }
+.auth-form form > *:nth-child(n + 6) { animation-delay: 200ms; }
+.onb-in > *:not(.onb-passos) {
+  animation: daDireita 320ms var(--saida) both;
+}
+.onb-passos span {
+  transition: background-color 400ms;
+}

@@ -1,0 +1,390 @@
+/* =====================================================================
+   Casca do app da barbearia e do painel admin
+   ===================================================================== */
+
+.app {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+}
+
+/* ---------- trilho lateral (preto, como o fundo da logo) */
+.rail {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  background: var(--preto);
+  color: var(--papel);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 14px 14px;
+  overflow-y: auto;
+}
+.rail-logo {
+  display: block;
+  width: 118px;
+  margin: 0 0 18px 4px;
+}
+.rail-logo img {
+  width: 100%;
+  height: auto;
+}
+.rail-casa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  background: var(--asfalto);
+  text-decoration: none;
+}
+.rail-casa .nome {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.rail-casa .rail-sub {
+  font-size: 12px;
+  color: var(--grafite-claro);
+}
+.rail-grupo {
+  margin-top: 10px;
+}
+.rail-grupo-tit {
+  font-size: 12px;
+  color: var(--grafite-claro);
+  padding: 8px 10px 4px;
+}
+.rail-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Item ativo = pedaço da logo: amarelo, texto preto e sombra cinza
+   deslocada. É o único lugar do app com esse tratamento no menu. */
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 7px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(246, 246, 242, 0.74);
+  transition: background-color 120ms, color 120ms;
+}
+.rail-item svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.rail-item:hover {
+  color: var(--papel);
+  background: var(--asfalto);
+}
+.rail-item.active {
+  background: var(--kort);
+  color: var(--preto);
+  font-weight: 700;
+  box-shadow: var(--adesivo-cinza);
+}
+.rail-item .cont {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--asfalto-2);
+  color: var(--papel);
+}
+.rail-item.active .cont {
+  background: var(--preto);
+  color: var(--kort);
+}
+.rail-rodape {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rail-usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid var(--asfalto-2);
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* painel admin: trilho invertido para nunca confundir com o app do barbeiro */
+.app.admin .rail {
+  background: var(--kort);
+  color: var(--preto);
+}
+.app.admin .rail-item {
+  color: rgba(8, 8, 8, 0.72);
+}
+.app.admin .rail-item:hover {
+  background: rgba(8, 8, 8, 0.08);
+  color: var(--preto);
+}
+.app.admin .rail-item.active {
+  background: var(--preto);
+  color: var(--kort);
+  box-shadow: var(--adesivo-cinza);
+}
+.app.admin .rail-casa {
+  background: var(--preto);
+  color: var(--kort);
+}
+.app.admin .rail-usuario {
+  border-top-color: rgba(8, 8, 8, 0.18);
+}
+.app.admin .rail-grupo-tit {
+  color: rgba(8, 8, 8, 0.6);
+}
+
+/* ---------- área principal */
+.principal {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pagina {
+  padding: 28px 32px 48px;
+  width: 100%;
+  max-width: 1320px;
+}
+.principal.cheia {
+  height: 100dvh;
+  overflow: hidden;
+}
+.main-cheia {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pagina.cheia {
+  max-width: none;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pagina-cab {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.pagina-cab h1 {
+  font-size: 40px;
+}
+.pagina-cab .sub {
+  margin-top: 6px;
+  color: var(--grafite);
+  font-size: 14.5px;
+  max-width: 64ch;
+}
+.pagina-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--grafite);
+  text-decoration: none;
+  margin-bottom: 10px;
+}
+.voltar:hover {
+  color: var(--preto);
+}
+.voltar svg {
+  width: 16px;
+  height: 16px;
+}
+
+.duas-colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.pilha {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---------- topo e abas do celular */
+.topo-mobile,
+.abas-mobile {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+  .rail {
+    display: none;
+  }
+  .topo-mobile {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--topo-mobile);
+    padding: 0 12px 0 16px;
+    background: var(--preto);
+    color: var(--papel);
+  }
+  .topo-mobile img {
+    height: 30px;
+    width: auto;
+  }
+  .app.admin .topo-mobile {
+    background: var(--kort);
+    color: var(--preto);
+  }
+  .abas-mobile {
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(var(--abas-mobile) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--papel);
+    border-top: 1px solid var(--linha);
+  }
+  .abas-mobile a,
+  .abas-mobile button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 0;
+    background: none;
+    text-decoration: none;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--grafite);
+  }
+  .abas-mobile svg {
+    width: 22px;
+    height: 22px;
+  }
+  .abas-mobile .active {
+    color: var(--preto);
+  }
+  .abas-mobile .active svg {
+    background: var(--kort);
+    border-radius: 6px;
+    box-shadow: 2px 2px 0 var(--preto);
+    padding: 2px;
+    width: 26px;
+    height: 26px;
+    margin: -2px 0;
+  }
+  .pagina {
+    padding: 20px 16px calc(var(--abas-mobile) + 32px);
+  }
+  .pagina.cheia {
+    padding: 0;
+  }
+  .main-cheia {
+    padding-bottom: calc(var(--abas-mobile) + env(safe-area-inset-bottom));
+  }
+  .pagina-cab h1 {
+    font-size: 32px;
+  }
+  .duas-colunas {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* menu "Mais" no celular */
+.menu-mais {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.menu-mais a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--linha-fraca);
+  background: var(--branco);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+.menu-mais a.active {
+  background: var(--kort);
+  border-color: var(--preto);
+}
+.menu-mais svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* faixa de aviso da demonstração */
+.faixa-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  background: var(--asfalto);
+  color: var(--lamina);
+  text-align: center;
+}
+.faixa-demo button {
+  border: 0;
+  background: none;
+  color: var(--kort);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: 12.5px;
+}
+
+@media (max-width: 900px) {
+  .faixa-demo {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+  .faixa-demo .longo {
+    display: none;
+  }
+}

@@ -1,0 +1,497 @@
+/* =====================================================================
+   Agenda: colunas por barbeiro (padrão Square/Fresha), régua de horas
+   à esquerda, linha do "agora" e blocos com a cor do barbeiro.
+   ===================================================================== */
+
+.agenda-barra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--linha);
+  background: var(--papel);
+  flex-wrap: wrap;
+}
+.agenda-data {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.agenda-data h1 {
+  font-size: 30px;
+  min-width: 0;
+  margin: 0 8px;
+  white-space: nowrap;
+}
+.agenda-data .rel {
+  font-family: var(--f-texto);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--grafite);
+  margin-left: 4px;
+}
+.agenda-resumo {
+  display: flex;
+  gap: 18px;
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--grafite);
+}
+.agenda-resumo b {
+  color: var(--preto);
+  font-weight: 700;
+}
+
+.agenda-scroll {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: var(--concreto);
+}
+.agenda-grade {
+  --hora: 72px; /* altura de 1 hora */
+  --colmin: 190px;
+  display: grid;
+  grid-template-columns: 58px repeat(var(--cols), minmax(var(--colmin), 1fr));
+  min-width: fit-content;
+  position: relative;
+}
+.agenda-cab {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: contents;
+}
+.agenda-cab > div {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--papel);
+  border-bottom: 1px solid var(--linha);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.agenda-cab > div:first-child {
+  left: 0;
+  z-index: 7;
+}
+.agenda-cab .nome {
+  font-weight: 700;
+  font-size: 14px;
+}
+.agenda-cab .det {
+  font-size: 12px;
+  color: var(--grafite);
+}
+
+.agenda-regua {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--concreto);
+  border-right: 1px solid var(--linha);
+}
+.agenda-regua span {
+  position: absolute;
+  right: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--grafite);
+  transform: translateY(-50%);
+}
+.agenda-col {
+  position: relative;
+  border-right: 1px solid var(--linha-fraca);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--linha-fraca) 0,
+    var(--linha-fraca) 1px,
+    transparent 1px,
+    transparent calc(var(--hora) / 2)
+  );
+  background-color: var(--papel);
+}
+.agenda-col .fora {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: repeating-linear-gradient(-45deg, rgba(8, 8, 8, 0.045) 0 6px, transparent 6px 12px), var(--concreto);
+  pointer-events: none;
+}
+.agenda-col .bloqueio {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(-45deg, rgba(8, 8, 8, 0.08) 0 6px, rgba(8, 8, 8, 0.03) 6px 12px);
+  border: 1px dashed var(--grafite-claro);
+  font-size: 12px;
+  color: var(--grafite);
+  padding: 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.agenda-col .bloqueio button {
+  border: 0;
+  background: none;
+  font-size: 12px;
+  color: var(--grafite);
+  text-decoration: underline;
+  padding: 0;
+}
+.agenda-slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  z-index: 1;
+}
+.agenda-slot:hover {
+  background: rgba(231, 247, 56, 0.35);
+}
+.agenda-slot:hover::after {
+  content: attr(data-hora) '  +';
+  position: absolute;
+  left: 8px;
+  top: 2px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--preto);
+}
+
+/* bloco de horário */
+.ag {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  z-index: 2;
+  border-radius: 6px;
+  background: var(--branco);
+  border: 1px solid var(--linha);
+  border-left: 4px solid var(--cor);
+  padding: 5px 8px 5px 9px;
+  text-align: left;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12.5px;
+  line-height: 1.3;
+  transition: box-shadow 100ms, transform 100ms;
+}
+.ag:hover {
+  box-shadow: 2px 2px 0 var(--preto);
+  transform: translate(-1px, -1px);
+  z-index: 3;
+}
+.ag .h {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--grafite);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ag .h svg {
+  width: 12px;
+  height: 12px;
+}
+.ag .c {
+  font-weight: 700;
+  font-size: 13px;
+}
+.ag .s {
+  color: var(--grafite);
+}
+.ag.curto {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.ag.curto .s {
+  display: none;
+}
+.ag[data-status='confirmado'] {
+  background: var(--branco);
+}
+.ag[data-status='agendado'] {
+  background: var(--branco);
+  border-style: dashed;
+  border-left-style: solid;
+}
+.ag[data-status='em_atendimento'] {
+  background: var(--kort-suave);
+  border-color: var(--preto);
+}
+.ag[data-status='concluido'] {
+  background: var(--concreto);
+  border-color: var(--linha-fraca);
+  opacity: 0.78;
+}
+.ag[data-status='faltou'] {
+  background: var(--perigo-fundo);
+  border-color: #E3B5A9;
+}
+.ag[data-status='faltou'] .c {
+  text-decoration: line-through;
+}
+
+/* linha do agora */
+.agora {
+  position: absolute;
+  left: 58px;
+  right: 0;
+  height: 0;
+  border-top: 2px solid var(--preto);
+  z-index: 4;
+  pointer-events: none;
+}
+.agora span {
+  position: absolute;
+  left: -58px;
+  top: -11px;
+  width: 54px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 800;
+  background: var(--kort);
+  border: 1.5px solid var(--preto);
+  border-radius: 4px;
+  line-height: 18px;
+}
+
+/* legenda */
+.agenda-legenda {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--grafite);
+  flex-wrap: wrap;
+}
+.agenda-legenda i {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  border: 1px solid var(--linha);
+  background: var(--branco);
+}
+.agenda-legenda i.agendado {
+  border-style: dashed;
+}
+.agenda-legenda i.em {
+  background: var(--kort-suave);
+  border-color: var(--preto);
+}
+.agenda-legenda i.conc {
+  background: var(--concreto);
+}
+.agenda-legenda i.falt {
+  background: var(--perigo-fundo);
+}
+
+/* semana */
+.semana {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--linha);
+  min-width: fit-content;
+}
+.semana-dia {
+  background: var(--papel);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.semana-dia > header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--linha-fraca);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  background: var(--papel);
+}
+.semana-dia > header b {
+  font-family: var(--f-display);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+}
+.semana-dia.hoje > header b {
+  background: var(--kort);
+  padding: 0 4px;
+  box-shadow: 2px 2px 0 var(--preto);
+}
+.semana-dia ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.semana-dia li button {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--linha-fraca);
+  border-left: 3px solid var(--cor);
+  background: var(--branco);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+.semana-dia li button:hover {
+  border-color: var(--preto);
+  border-left-color: var(--cor);
+}
+
+/* lista do dia (celular) */
+.dia-lista {
+  padding: 12px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dia-lista .item {
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--branco);
+  border: 1px solid var(--linha-fraca);
+  border-left: 4px solid var(--cor);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+.dia-lista .item .hh {
+  font-family: var(--f-display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+.dia-lista .livre {
+  border: 1px dashed var(--linha);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--grafite);
+  background: transparent;
+  text-align: left;
+  width: 100%;
+}
+.dia-lista .livre b {
+  color: var(--preto);
+}
+.seletor-barbeiro {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--linha-fraca);
+  background: var(--papel);
+  scrollbar-width: none;
+}
+
+@media (max-width: 900px) {
+  .agenda-barra {
+    padding: 10px 16px;
+  }
+  .agenda-data h1 {
+    font-size: 24px;
+    margin: 0 4px;
+  }
+  .agenda-resumo {
+    display: none;
+  }
+}
+
+/* slots de horário (usados na folha de novo horário e na página pública) */
+.slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+.slots button {
+  height: 40px;
+  border-radius: 6px;
+  border: 1px solid var(--linha);
+  background: var(--branco);
+  font-weight: 600;
+  font-size: 14px;
+}
+.slots button:hover {
+  border-color: var(--preto);
+}
+.slots button[aria-pressed='true'] {
+  background: var(--kort);
+  border: 1.5px solid var(--preto);
+  box-shadow: 2px 2px 0 var(--preto);
+}
+.slots-periodo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--grafite);
+  margin: 14px 0 8px;
+}
+.slots-periodo:first-child {
+  margin-top: 0;
+}
+
+/* tira de dias */
+.dias-tira {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.dias-tira button {
+  flex: none;
+  width: 56px;
+  padding: 8px 0 9px;
+  border-radius: 8px;
+  border: 1px solid var(--linha);
+  background: var(--branco);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--grafite);
+}
+.dias-tira button b {
+  font-family: var(--f-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--preto);
+  line-height: 1;
+}
+.dias-tira button[aria-pressed='true'] {
+  background: var(--preto);
+  border-color: var(--preto);
+  color: var(--lamina);
+}
+.dias-tira button[aria-pressed='true'] b {
+  color: var(--kort);
+}
+.dias-tira button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

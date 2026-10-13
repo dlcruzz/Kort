@@ -1,0 +1,434 @@
+/* =====================================================================
+   Página pública de agendamento (o que o cliente da barbearia vê).
+   Fundo preto como a logo; o amarelo marca só o que foi escolhido.
+   ===================================================================== */
+
+.pub {
+  --fundo: var(--preto);
+  --sup: #141413;
+  --sup-2: #1E1E1C;
+  --borda: #2C2C2A;
+  --txt: #F2F2EE;
+  --txt-2: #A3A39C;
+  min-height: 100dvh;
+  background: var(--fundo);
+  color: var(--txt);
+}
+.pub :focus-visible {
+  outline-color: var(--kort);
+  box-shadow: 0 0 0 5px rgba(231, 247, 56, 0.35);
+}
+.pub-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 18px calc(120px + env(safe-area-inset-bottom));
+}
+
+.pub-capa {
+  padding: 28px 0 22px;
+  border-bottom: 1px solid var(--borda);
+}
+.pub-capa .marca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 26px;
+}
+.pub-capa h1 {
+  font-size: clamp(44px, 12vw, 68px);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+.pub-capa .desc {
+  color: var(--txt-2);
+  margin-top: 12px;
+  font-size: 15px;
+  max-width: 52ch;
+}
+.pub-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 16px;
+  font-size: 13.5px;
+  color: var(--txt-2);
+}
+.pub-info span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pub-info svg {
+  width: 15px;
+  height: 15px;
+}
+.pub-info a {
+  color: var(--txt);
+  text-underline-offset: 3px;
+}
+.pub-nota {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--txt);
+  font-weight: 600;
+}
+.pub-nota svg {
+  color: var(--kort);
+  fill: var(--kort);
+}
+
+/* passos: é uma sequência de verdade, então leva número */
+.pub-passos {
+  display: flex;
+  gap: 4px;
+  margin: 22px 0 6px;
+}
+.pub-passos span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--borda);
+}
+.pub-passos span.feito {
+  background: var(--kort);
+}
+.pub-passo-tit {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 18px 0 14px;
+}
+.pub-passo-tit .n {
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-size: 18px;
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--kort);
+  color: var(--preto);
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 var(--sombra);
+  flex: none;
+  transform: translateY(-3px);
+}
+.pub-passo-tit h2 {
+  font-size: 32px;
+  font-weight: 800;
+}
+.pub-voltar {
+  border: 0;
+  background: none;
+  color: var(--txt-2);
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  margin-top: 6px;
+}
+.pub-voltar svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* opções (serviços e barbeiros) */
+.pub-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pub-opcao {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--borda);
+  background: var(--sup);
+  color: var(--txt);
+  transition: border-color 120ms, background-color 120ms;
+}
+.pub-opcao:hover {
+  border-color: #4A4A46;
+}
+.pub-opcao .t {
+  font-weight: 700;
+  font-size: 16px;
+}
+.pub-opcao .d {
+  grid-column: 1;
+  font-size: 13.5px;
+  color: var(--txt-2);
+}
+.pub-opcao .p {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  text-align: right;
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.pub-opcao .p small {
+  display: block;
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--txt-2);
+}
+.pub-opcao[aria-pressed='true'] {
+  border-color: var(--kort);
+  background: var(--sup-2);
+  box-shadow: inset 4px 0 0 var(--kort);
+}
+.pub-opcao.barbeiro {
+  grid-template-columns: auto 1fr auto;
+}
+.pub-opcao.barbeiro .avatar {
+  grid-row: 1 / span 2;
+  --tam: 46px;
+  background: var(--sup-2);
+  color: var(--txt);
+}
+.pub-opcao.barbeiro .d {
+  grid-column: 2;
+}
+.pub-opcao.barbeiro .p {
+  grid-column: 3;
+}
+
+/* datas e horários no escuro */
+.pub .dias-tira button {
+  background: var(--sup);
+  border-color: var(--borda);
+  color: var(--txt-2);
+}
+.pub .dias-tira button b {
+  color: var(--txt);
+}
+.pub .dias-tira button[aria-pressed='true'] {
+  background: var(--kort);
+  border-color: var(--kort);
+  color: var(--preto);
+}
+.pub .dias-tira button[aria-pressed='true'] b {
+  color: var(--preto);
+}
+.pub .slots button {
+  background: var(--sup);
+  border-color: var(--borda);
+  color: var(--txt);
+}
+.pub .slots button:hover {
+  border-color: var(--txt-2);
+}
+.pub .slots button[aria-pressed='true'] {
+  background: var(--kort);
+  color: var(--preto);
+  border-color: var(--kort);
+  box-shadow: 2px 2px 0 var(--sombra);
+}
+.pub .slots-periodo {
+  color: var(--txt-2);
+}
+.pub-sem-horario {
+  padding: 22px 16px;
+  border: 1px dashed var(--borda);
+  border-radius: 10px;
+  color: var(--txt-2);
+  font-size: 14px;
+  text-align: center;
+}
+.pub-sem-horario button {
+  margin-top: 10px;
+}
+
+/* formulário no escuro */
+.pub .rotulo,
+.pub .campo > label {
+  color: var(--txt);
+}
+.pub .input,
+.pub .textarea {
+  background: var(--sup);
+  border-color: var(--borda);
+  color: var(--txt);
+  height: 48px;
+  font-size: 16px; /* evita zoom no iOS */
+}
+.pub .textarea {
+  height: auto;
+}
+.pub .input::placeholder,
+.pub .textarea::placeholder {
+  color: #6E6E68;
+}
+.pub .campo .ajuda {
+  color: var(--txt-2);
+}
+.pub .btn-sec {
+  background: transparent;
+  border-color: var(--borda);
+  color: var(--txt);
+}
+.pub .btn-sec:hover:not(:disabled) {
+  border-color: var(--txt-2);
+}
+.pub .btn-primario {
+  box-shadow: 3px 3px 0 var(--sombra);
+  border-color: var(--kort);
+}
+.pub .btn-primario:disabled {
+  background: var(--sup-2);
+  border-color: var(--borda);
+  color: #6E6E68;
+  box-shadow: none;
+}
+.pub .btn-primario:active:not(:disabled) {
+  box-shadow: 0 0 0 var(--sombra);
+}
+
+/* resumo fixo no rodapé */
+.pub-resumo {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: rgba(8, 8, 8, 0.94);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--borda);
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+}
+.pub-resumo-in {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pub-resumo .tot {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+}
+.pub-resumo .det {
+  font-size: 12.5px;
+  color: var(--txt-2);
+  margin-top: 3px;
+}
+.pub-resumo .btn {
+  margin-left: auto;
+}
+
+/* bilhete de confirmação */
+.bilhete {
+  margin-top: 26px;
+  background: var(--kort);
+  color: var(--preto);
+  border-radius: 12px;
+  padding: 22px 20px 20px;
+  box-shadow: 5px 5px 0 var(--sombra);
+  position: relative;
+}
+.bilhete .ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.bilhete .ok svg {
+  width: 20px;
+  height: 20px;
+}
+.bilhete h2 {
+  font-size: 44px;
+  font-weight: 900;
+  margin: 12px 0 4px;
+  line-height: 0.95;
+}
+.bilhete .quando {
+  font-size: 17px;
+  font-weight: 600;
+}
+.bilhete dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 2px dashed rgba(8, 8, 8, 0.35);
+  font-size: 14px;
+}
+.bilhete dt {
+  color: rgba(8, 8, 8, 0.65);
+}
+.bilhete dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+.pub-acoes-final {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.pub-rodape {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--borda);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--txt-2);
+}
+.pub-rodape a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--txt-2);
+  text-decoration: none;
+}
+.pub-rodape img {
+  height: 22px;
+  width: auto;
+}
+
+/* avaliações públicas */
+.pub-avaliacoes {
+  margin-top: 30px;
+}
+.pub-avaliacoes h3 {
+  font-family: var(--f-display);
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+.pub-avaliacoes blockquote {
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--kort);
+  background: var(--sup);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+}
+.pub-avaliacoes cite {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 12.5px;
+  color: var(--txt-2);
+}
