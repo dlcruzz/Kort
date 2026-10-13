@@ -2,24 +2,24 @@ import { Link } from 'react-router-dom'
 import { Check } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { TextoContado, useRevelar } from '../lib/movimento'
-import { dinheiroCurto } from '../lib/format'
+import { dinheiroCurto, dominio } from '../lib/format'
 
-// Valores de exemplo: ajuste quando definir os preços na validação.
+// Mesmos preços da tabela planos (supabase/producao.sql).
 export const PLANOS = [
   {
-    nome: 'Grátis', preco: 0, pq: 'Para testar com seus clientes.',
+    slug: 'gratis', nome: 'Grátis', preco: 0, pq: 'Para testar com seus clientes.',
     itens: ['Página de agendamento', 'Agenda de 1 barbeiro', 'Até 50 horários por mês'],
   },
   {
-    nome: 'Solo', preco: 3990, pq: 'Barbeiro que atende sozinho.',
+    slug: 'solo', nome: 'Solo', preco: 3990, pq: 'Barbeiro que atende sozinho.',
     itens: ['Horários ilimitados', 'Lembrete no WhatsApp', 'Caixa e relatórios', 'Horários livres para o status'],
   },
   {
-    nome: 'Barbearia', preco: 7990, pq: 'Dono com equipe ou cadeira alugada.', destaque: true,
+    slug: 'barbearia', nome: 'Barbearia', preco: 7990, pq: 'Dono com equipe ou cadeira alugada.', destaque: true,
     itens: ['Tudo do Solo', 'Vários barbeiros e comissões', 'Fidelidade e clube de assinatura', 'Modo cadeira alugada', 'Estoque e despesas'],
   },
   {
-    nome: 'Pro', preco: 14990, pq: 'Casas grandes e mais de uma unidade.',
+    slug: 'pro', nome: 'Pro', preco: 14990, pq: 'Casas grandes e mais de uma unidade.',
     itens: ['Tudo do Barbearia', 'Mais de uma unidade', 'Fechamento da equipe', 'Atendimento prioritário'],
   },
 ]
@@ -29,12 +29,12 @@ const DIA = [
     hr: '07:40',
     tit: 'O cliente marca antes de você abrir a porta.',
     txt: 'Ele escolhe o serviço, o barbeiro e o horário pelo link na sua bio. Ninguém precisa te chamar no WhatsApp.',
-    ex: <div className="exemplo">kort.app/b/<b>sua-barbearia</b></div>,
+    ex: <div className="exemplo">{dominio()}/b/<b>sua-barbearia</b></div>,
   },
   {
     hr: '10:00',
-    tit: 'Lembrete sai sozinho. A falta cai.',
-    txt: 'Um dia antes e duas horas antes o cliente recebe a mensagem com botão para confirmar ou remarcar.',
+    tit: 'Lembrete pronto em um toque. A falta cai.',
+    txt: 'O Kort lista quem vem amanhã com a mensagem escrita e o link para o cliente confirmar ou remarcar. Você só aperta enviar no WhatsApp.',
     ex: (
       <div className="exemplo whats">
         E aí, Matheus! Amanhã às 15:30 tem Corte degradê com o Pedrinho. Responde 1 para confirmar.
@@ -87,7 +87,7 @@ export default function Site() {
             </p>
             <div className="acoes">
               <Link className="btn btn-primario btn-grande" to="/criar-conta">Criar minha barbearia</Link>
-              <Link className="btn btn-sec btn-grande" to="/app/agenda">Ver o app por dentro</Link>
+              <Link className="btn btn-sec btn-grande" to="/demo">Ver o app por dentro</Link>
             </div>
             <p className="nota">14 dias grátis. Sem cartão de crédito e sem fidelidade.</p>
           </div>

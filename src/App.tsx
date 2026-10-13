@@ -1,11 +1,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './layouts/AppLayout'
 import AdminLayout from './layouts/AdminLayout'
+import { EntrarDemo, ExigeAdmin, ExigeBarbearia } from './components/guardas'
 
 import Site from './pages/Site'
 import Entrar from './pages/auth/Entrar'
 import CriarConta from './pages/auth/CriarConta'
 import Onboarding from './pages/auth/Onboarding'
+import NovaSenha from './pages/auth/NovaSenha'
+import Convite from './pages/auth/Convite'
 
 import Agendar from './pages/publico/Agendar'
 import MeuHorario from './pages/publico/MeuHorario'
@@ -38,12 +41,15 @@ export default function App() {
       <Route path="/entrar" element={<Entrar />} />
       <Route path="/criar-conta" element={<CriarConta />} />
       <Route path="/comecar" element={<Onboarding />} />
+      <Route path="/demo" element={<EntrarDemo />} />
+      <Route path="/nova-senha" element={<NovaSenha />} />
+      <Route path="/convite" element={<Convite />} />
 
       {/* página pública da barbearia: kort.app/b/<slug> */}
       <Route path="/b/:slug" element={<Agendar />} />
       <Route path="/b/:slug/horario/:id" element={<MeuHorario />} />
 
-      <Route path="/app" element={<AppLayout />}>
+      <Route path="/app" element={<ExigeBarbearia><AppLayout /></ExigeBarbearia>}>
         <Route index element={<Navigate to="agenda" replace />} />
         <Route path="agenda" element={<Agenda />} />
         <Route path="caixa" element={<Caixa />} />
@@ -60,7 +66,7 @@ export default function App() {
         <Route path="configuracoes" element={<Configuracoes />} />
       </Route>
 
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route path="/admin" element={<ExigeAdmin><AdminLayout /></ExigeAdmin>}>
         <Route index element={<AdminVisao />} />
         <Route path="barbearias" element={<AdminBarbearias />} />
         <Route path="barbearias/:id" element={<AdminBarbeariaDetalhe />} />

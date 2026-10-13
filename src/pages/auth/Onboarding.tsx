@@ -1,20 +1,42 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { Campo, Segmentos } from '../../components/ui'
 import { useKort } from '../../lib/store'
-import { nomeDia, paraCentavos } from '../../lib/format'
+import { mascaraTelefone, nomeDia, paraCentavos, telefoneE164 } from '../../lib/format'
+import { useSessao } from '../../lib/sessao'
+import { supabase } from '../../lib/supabase'
+import { mensagemDeErro } from '../../lib/banco'
+import { TelaCarregando } from '../../components/guardas'
+import { conviteGuardado } from './Convite'
 
-// Configuração inicial em 3 passos. No Supabase:
-//   insert into barbearias (slug, nome, ..., criado_por) -> o trigger cria o dono e o teste de 14 dias
-//   insert into servicos (...)  |  insert into horarios_funcionamento (...)
+// Configuração inicial em 3 passos. No modo real tudo vai numa chamada só,
+// rpc('criar_barbearia'): cria a barbearia, o dono, o teste de 14 dias, os
+// serviços, o horário, a jornada do dono e as mensagens padrão.
 
 const slugificar = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
 export default function Onboarding() {
+  const sessao = useSessao()
+  if (sessao.modo === 'real') {
+    if (!sessao.pronto) return <TelaCarregando />
+    if (!sessao.usuario) return <Navigate to="/criar-conta" replace />
+    if (sessao.vinculo) return <Navigate to="/app/agenda" replace />
+    if (conviteGuardado()) return <Navigate to="/convite" replace />
+  }
+  return <Passos />
+}
+
+function Passos() {
   const nav = useNavigate()
+  const sessao = useSessao()
   const { acoes } = useKort()
+  const real = sessao.modo === 'real'
   const [passo, setPasso] = useState(1)
+  const [whats, setWhats] = useState('')
+  const [slugLivre, setSlugLivre] = useState<boolean | null>(null)
+  const [erro, setErro] = useState('')
+  const [enviando, setEnviando] = useState(false)
   const [nome, setNome] = useState('')
   const [slug, setSlug] = useState('')
   const [modo, setModo] = useState<'equipe' | 'cadeira_alugada'>('equipe')
@@ -28,7 +50,45 @@ export default function Onboarding() {
   const [abre, setAbre] = useState('09:00')
   const [fecha, setFecha] = useState('19:00')
 
-  const concluir = () => {
+  // link já usado? confere enquanto digita
+  useEffect(() => {
+    if (!real || !supabase || slug.length < 3) {
+      setSlugLivre(null)
+      return
+    }
+    const t = setTimeout(async () => {
+      const { data } = await supabase!.rpc('slug_disponivel', { p_slug: slug })
+      setSlugLivre(data as boolean)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [slug, real])
+
+  const concluir = async () => {
+    if (real && supabase) {
+      setErro('')
+      setEnviando(true)
+      const [b, ...resto] = bairro.split(',')
+      const { error } = await supabase.rpc('criar_barbearia', {
+        p_nome: nome.trim(),
+        p_slug: slug || slugificar(nome),
+        p_bairro: (b ?? '').trim(),
+        p_cidade: resto.join(',').trim(),
+        p_modo: modo,
+        p_servicos: servicos.filter((s) => s.nome.trim()).map((s) => ({ nome: s.nome.trim(), preco_centavos: paraCentavos(s.preco), duracao_min: s.duracao })),
+        p_dias: dias,
+        p_abre: abre,
+        p_fecha: fecha,
+        p_whatsapp: whats ? telefoneE164(whats) : null,
+      })
+      if (error) {
+        setEnviando(false)
+        setErro(mensagemDeErro(error))
+        return
+      }
+      await sessao.recarregar()
+      nav('/app/agenda', { replace: true })
+      return
+    }
     acoes.salvarBarbearia({ nome: nome || 'Minha barbearia', slug: slug || slugificar(nome) || 'minha-barbearia', bairro, modo_operacao: modo })
     servicos.filter((s) => s.nome.trim()).forEach((s) => acoes.salvarServico({ nome: s.nome, preco_centavos: paraCentavos(s.preco), duracao_min: s.duracao }))
     acoes.salvarHorarios(dias.map((d) => ({ dia_semana: d, abre, fecha })))
@@ -51,11 +111,15 @@ export default function Onboarding() {
               <Campo rotulo="Nome da barbearia" id="nome">
                 <input id="nome" className="input" value={nome} onChange={(e) => { setNome(e.target.value); setSlug(slugificar(e.target.value)) }} placeholder="Ex.: Barbearia do Zé" />
               </Campo>
-              <Campo rotulo="Seu link" id="slug" ajuda="Coloque na bio do Instagram e no status do WhatsApp.">
+              <Campo rotulo="Seu link" id="slug" erro={slugLivre === false ? 'Esse link já é de outra barbearia. Mude um pouco.' : undefined}
+                ajuda={slugLivre ? 'Link livre. Coloque na bio do Instagram e no status do WhatsApp.' : 'Coloque na bio do Instagram e no status do WhatsApp.'}>
                 <div className="input-prefixo">
-                  <span style={{ fontSize: 13 }}>kort.app/b/</span>
-                  <input id="slug" className="input" style={{ paddingLeft: 88 }} value={slug} onChange={(e) => setSlug(slugificar(e.target.value))} />
+                  <span style={{ fontSize: 13 }}>{window.location.host}/b/</span>
+                  <input id="slug" className="input" style={{ paddingLeft: `${(window.location.host.length + 3) * 7.4 + 14}px` }} value={slug} onChange={(e) => setSlug(slugificar(e.target.value))} />
                 </div>
+              </Campo>
+              <Campo rotulo="WhatsApp da barbearia" id="whats" ajuda="O cliente fala com você por esse número.">
+                <input id="whats" className="input" inputMode="tel" value={whats} onChange={(e) => setWhats(mascaraTelefone(e.target.value))} placeholder="(11) 90000-0000" />
               </Campo>
               <Campo rotulo="Bairro e cidade" id="bairro">
                 <input id="bairro" className="input" value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Ex.: Itaquera, São Paulo" />
@@ -113,12 +177,13 @@ export default function Onboarding() {
           </>
         )}
 
+        {erro && <div className="campo" style={{ marginTop: 16 }}><span className="erro" role="alert">{erro}</span></div>}
         <div className="onb-rodape">
           {passo > 1 ? <button className="btn btn-sec" onClick={() => setPasso(passo - 1)}>Voltar</button> : <span />}
           {passo < 3 ? (
-            <button className="btn btn-primario" onClick={() => setPasso(passo + 1)} disabled={passo === 1 && !nome.trim()}>Continuar</button>
+            <button className="btn btn-primario" onClick={() => setPasso(passo + 1)} disabled={passo === 1 && (!nome.trim() || slugLivre === false)}>Continuar</button>
           ) : (
-            <button className="btn btn-primario" onClick={concluir}>Abrir minha agenda</button>
+            <button className="btn btn-primario" onClick={concluir} disabled={enviando || dias.length === 0}>{enviando ? 'Abrindo...' : 'Abrir minha agenda'}</button>
           )}
         </div>
       </div>

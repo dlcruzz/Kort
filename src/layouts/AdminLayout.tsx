@@ -1,7 +1,9 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Gauge, Store, Activity, FileText, Lightbulb, LogOut } from 'lucide-react'
 import { RailIndicador } from '../components/RailIndicador'
 import { Avatar } from '../components/ui'
+import { useSessao } from '../lib/sessao'
+import { useCarregarAdmin } from '../lib/adminStore'
 
 const ITENS = [
   { to: '/admin', nome: 'Visão geral', icone: Gauge, end: true },
@@ -13,6 +15,15 @@ const ITENS = [
 
 export default function AdminLayout() {
   const { pathname } = useLocation()
+  const sessao = useSessao()
+  const nav = useNavigate()
+  useCarregarAdmin()
+  const nome = sessao.modo === 'demo' ? 'Danilo Cruz' : sessao.perfil?.nome || sessao.usuario?.email || 'Admin'
+  const sair = async () => {
+    if (sessao.modo === 'demo') sessao.sairDemo()
+    else await sessao.sair()
+    nav('/entrar')
+  }
   return (
     <div className="app admin">
       <aside className="rail" aria-label="Menu do painel Kort">
@@ -40,14 +51,14 @@ export default function AdminLayout() {
             Abrir app de barbearia
           </NavLink>
           <div className="rail-usuario">
-            <Avatar nome="Danilo Cruz" tam={30} />
+            <Avatar nome={nome} tam={30} />
             <div className="cresce">
-              <div style={{ fontWeight: 600 }}>Danilo</div>
-              <div style={{ fontSize: 12, opacity: 0.65 }}>Super admin</div>
+              <div style={{ fontWeight: 600 }}>{nome.split(' ')[0]}</div>
+              <div style={{ fontSize: 12, opacity: 0.65 }}>{sessao.modo === 'demo' ? 'Demonstração' : 'Super admin'}</div>
             </div>
-            <NavLink to="/entrar" className="btn btn-fantasma btn-icone" aria-label="Sair">
+            <button onClick={sair} className="btn btn-fantasma btn-icone" aria-label="Sair">
               <LogOut size={17} />
-            </NavLink>
+            </button>
           </div>
         </div>
       </aside>

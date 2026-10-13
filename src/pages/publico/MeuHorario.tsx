@@ -1,17 +1,42 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Check } from 'lucide-react'
-import { useKort, useMapas } from '../../lib/store'
+import { useMeuHorario } from '../../lib/publico'
+import { TelaCarregando } from '../../components/guardas'
 import { horariosLivres, type Slot } from '../../lib/agenda'
 import { dataLonga, dinheiroCurto, hora, hoje, isoDia, nomeDiaCurto, somaDias } from '../../lib/format'
 import { Confirmar } from '../../components/ui'
 
 export default function MeuHorario() {
   const { slug, id } = useParams()
-  const { estado, acoes } = useKort()
-  const { membro } = useMapas()
+  const [params] = useSearchParams()
+  const h = useMeuHorario(slug, id, params.get('t'))
+  if (h.situacao === 'carregando') return <div className="pub"><TelaCarregando /></div>
+  return <Tela h={h} slug={slug} />
+}
+
+function Tela({ h, slug }: { h: ReturnType<typeof useMeuHorario>; slug?: string }) {
+  const vazio = { barbearia: { slug: slug ?? '', nome: '', antecedencia_max_dias: 0, antecedencia_cancelamento_min: 0, intervalo_slots_min: 15, whatsapp: null }, membros: [], jornadas: [], agendamentos: [], bloqueios: [], horarios: [] }
+  const estado = (h.dados ?? vazio) as NonNullable<typeof h.dados>
   const b = estado.barbearia
-  const ag = estado.agendamentos.find((a) => a.id === id)
+  const ag = h.agendamento
+  const membro = useMemo(() => new Map(estado.membros.map((m) => [m.id, m])), [estado.membros])
+  const [enviando, setEnviando] = useState(false)
+  const [erro, setErro] = useState('')
+  const executar = async (fn: () => Promise<void>, ok: string) => {
+    setEnviando(true)
+    setErro('')
+    try {
+      await fn()
+      setFeito(ok)
+      return true
+    } catch (e) {
+      setErro((e as Error).message)
+      return false
+    } finally {
+      setEnviando(false)
+    }
+  }
 
   const [modo, setModo] = useState<'ver' | 'remarcar'>('ver')
   const [cancelar, setCancelar] = useState(false)
@@ -28,13 +53,15 @@ export default function MeuHorario() {
     [ag, dia, duracao, estado.jornadas, estado.agendamentos, estado.bloqueios, b.intervalo_slots_min],
   )
 
-  if (!ag || slug !== b.slug) {
+  if (!ag || h.situacao !== 'pronto') {
     return (
       <div className="pub">
         <div className="pub-wrap" style={{ paddingTop: 80 }}>
           <h1 className="display" style={{ fontSize: 46 }}>Horário não encontrado</h1>
-          <p style={{ color: 'var(--txt-2)', marginTop: 12 }}>O link pode ter expirado. Marque um novo horário pela página da barbearia.</p>
-          <Link className="btn btn-primario" style={{ marginTop: 24 }} to={`/b/${b.slug}`}>Ir para a página da barbearia</Link>
+          <p style={{ color: 'var(--txt-2)', marginTop: 12 }}>
+            {h.situacao === 'erro' ? 'Confira sua internet e tente de novo.' : 'Confira se o link está completo, do jeito que chegou no WhatsApp.'}
+          </p>
+          <Link className="btn btn-primario" style={{ marginTop: 24 }} to={`/b/${slug}`}>Ir para a página da barbearia</Link>
         </div>
       </div>
     )
@@ -54,6 +81,7 @@ export default function MeuHorario() {
           <h1 style={{ marginTop: 14 }}>Seu horário</h1>
         </header>
 
+        {erro && <p className="pub-erro" role="alert" style={{ marginTop: 20 }}>{erro}</p>}
         {feito && (
           <p style={{ marginTop: 20, display: 'flex', gap: 8, alignItems: 'center', fontWeight: 600 }}>
             <Check size={18} color="var(--kort)" /> {feito}
@@ -77,6 +105,9 @@ export default function MeuHorario() {
         {!encerrado && modo === 'ver' && (
           podeMudar ? (
             <div className="pub-acoes-final">
+              {ag.status === 'agendado' && (
+                <button className="btn btn-primario" disabled={enviando} onClick={() => void executar(h.confirmar, 'Presença confirmada. Te esperamos!')}>Confirmar presença</button>
+              )}
               <button className="btn btn-sec" onClick={() => setModo('remarcar')}>Mudar horário</button>
               <button className="btn btn-sec" onClick={() => setCancelar(true)}>Cancelar</button>
             </div>
@@ -114,13 +145,14 @@ export default function MeuHorario() {
               <button className="btn btn-sec" onClick={() => setModo('ver')}>Voltar</button>
               <button
                 className="btn btn-primario"
-                disabled={!slot}
-                onClick={() => {
+                disabled={!slot || enviando}
+                onClick={async () => {
                   const ini = new Date(dia)
                   ini.setHours(0, slot!.minuto, 0, 0)
-                  acoes.remarcar(ag.id, ag.membro_id, ini)
-                  setModo('ver')
-                  setFeito('Horário mudado. A barbearia já foi avisada.')
+                  if (await executar(() => h.remarcar(ini), 'Horário mudado. A barbearia já vê o novo horário na agenda.')) {
+                    setModo('ver')
+                    setSlot(null)
+                  }
                 }}
               >
                 Mudar para {slot?.hhmm ?? '...'}
@@ -143,9 +175,8 @@ export default function MeuHorario() {
         perigo
         aoCancelar={() => setCancelar(false)}
         aoConfirmar={() => {
-          acoes.mudarStatus(ag.id, 'cancelado')
           setCancelar(false)
-          setFeito('Horário cancelado.')
+          void executar(h.cancelar, 'Horário cancelado.')
         }}
       />
     </div>

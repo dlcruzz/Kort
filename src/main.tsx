@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { KortProvider } from './lib/store'
+import { SessaoProvider } from './lib/sessao'
 import { AvisosProvider } from './components/avisos'
 import App from './App'
 
@@ -18,11 +19,13 @@ import './styles/movimento.css'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <KortProvider>
-        <AvisosProvider>
-          <App />
-        </AvisosProvider>
-      </KortProvider>
+      <SessaoProvider>
+        <KortProvider>
+          <AvisosProvider>
+            <App />
+          </AvisosProvider>
+        </KortProvider>
+      </SessaoProvider>
     </BrowserRouter>
   </StrictMode>,
 )

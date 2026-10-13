@@ -7,8 +7,7 @@ import { useKort, useMapas, totalComanda, subtotalComanda } from '../lib/store'
 import { horariosLivres } from '../lib/agenda'
 import {
   dataLonga, dataRelativa, dinheiro, dinheiroCurto, hora, hoje, isoDia, LABEL_FORMA, LABEL_ORIGEM, mascaraTelefone,
-  nomeDiaCurto, paraCentavos, somaDias, telefone, telefoneE164, tempoAtras,
-} from '../lib/format'
+  nomeDiaCurto, paraCentavos, somaDias, telefone, telefoneE164, tempoAtras, linkPublico } from '../lib/format'
 import type { Agendamento, FormaPagamento } from '../lib/types'
 import { Avatar, Confirmar, Folha, StatusTag } from './ui'
 import { useAvisar } from './avisos'
@@ -124,7 +123,7 @@ export function FolhaAgendamento(props: { agendamentoId: string | null; aoFechar
               <button className="btn btn-sec btn-pequeno" onClick={() => props.aoRemarcar(ag)}><CalendarClock /> Remarcar</button>
               {c && (
                 <a className="btn btn-sec btn-pequeno" target="_blank" rel="noreferrer"
-                  href={whatsLink(c.telefone, `E aí, ${c.nome.split(' ')[0]}! Confirmando seu horário ${dataRelativa(ag.inicio)} às ${hora(ag.inicio)} com ${m?.nome_exibicao}.`)}>
+                  href={whatsLink(c.telefone, `E aí, ${c.nome.split(' ')[0]}! Confirmando seu horário ${dataRelativa(ag.inicio)} às ${hora(ag.inicio)} com ${m?.nome_exibicao}. Para confirmar, mudar ou cancelar: ${linkPublico(estado.barbearia.slug)}/horario/${ag.id}${ag.token_publico ? `?t=${ag.token_publico}` : ''}`)}>
                   <MessageCircle /> Lembrar agora
                 </a>
               )}
@@ -234,7 +233,7 @@ export function FolhaNovoHorario(props: {
       aberta={props.aberta}
       aoFechar={props.aoFechar}
       titulo={props.remarcando ? 'Remarcar' : 'Novo horário'}
-      subtitulo={props.remarcando ? `${estado.clientes.find((c) => c.id === props.remarcando!.cliente_id)?.nome}, ${props.remarcando.servicos.map((s) => s.nome).join(' + ')}` : 'O cliente recebe a confirmação no WhatsApp.'}
+      subtitulo={props.remarcando ? `${estado.clientes.find((c) => c.id === props.remarcando!.cliente_id)?.nome}, ${props.remarcando.servicos.map((s) => s.nome).join(' + ')}` : 'Depois é só mandar a confirmação em Mensagens.'}
       rodape={
         <>
           <button className="btn btn-sec" onClick={props.aoFechar}>Cancelar</button>

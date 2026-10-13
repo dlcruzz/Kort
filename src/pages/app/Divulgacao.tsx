@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Copy, Download, Plus, Share2, Star } from 'lucide-react'
 import { useKort, useMapas } from '../../lib/store'
 import { horariosLivres } from '../../lib/agenda'
-import { dataCurta, dataLonga, dataRelativa, hoje, isoDia, nomeDia, nomeDiaCurto, primeiroNome, somaDias } from '../../lib/format'
+import { dataCurta, dataLonga, dataRelativa, hoje, isoDia, nomeDia, nomeDiaCurto, primeiroNome, somaDias, linkPublico, dominio } from '../../lib/format'
 import type { Cupom, Promocao } from '../../lib/types'
 import { CabecalhoPagina, Campo, Folha, Segmentos, Switch, Vazio } from '../../components/ui'
 import { useAvisar } from '../../components/avisos'
@@ -65,7 +65,7 @@ function HorariosStatus() {
         data: dataLonga(dia),
         quem: membroId === 'todos' ? null : estado.membros.find((m) => m.id === membroId)?.nome_exibicao ?? null,
         slots: slots.slice(0, 18),
-        link: `kort.app/b/${b.slug}`,
+        link: linkPublico(b.slug),
       })
     })
     return () => { cancelado = true }
@@ -85,7 +85,7 @@ function HorariosStatus() {
     if (!blob) return
     const arquivo = new File([blob], `horarios-${isoDia(dia)}.png`, { type: 'image/png' })
     if (navigator.canShare?.({ files: [arquivo] })) {
-      await navigator.share({ files: [arquivo], text: `Horários livres: kort.app/b/${b.slug}` }).catch(() => {})
+      await navigator.share({ files: [arquivo], text: `Horários livres: ${linkPublico(b.slug)}` }).catch(() => {})
       acoes.evento('status_horarios.gerado')
     } else baixar()
   }
@@ -237,7 +237,7 @@ function SeuLink() {
         <div className="painel-corpo coluna gap-16">
           <div>
             <div className="rotulo">Seu link de agendamento</div>
-            <div className="display" style={{ fontSize: 30, marginTop: 8, wordBreak: 'break-all' }}>kort.app/b/{estado.barbearia.slug}</div>
+            <div className="display" style={{ fontSize: 30, marginTop: 8, wordBreak: 'break-all' }}>{dominio()}/b/{estado.barbearia.slug}</div>
           </div>
           <div className="linha-flex" style={{ flexWrap: 'wrap' }}>
             <button className="btn btn-primario" onClick={() => copiar(url, 'Link copiado')}><Copy /> Copiar link</button>

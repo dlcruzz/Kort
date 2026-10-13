@@ -12,7 +12,7 @@ const PAPEL: Record<PapelMembro, string> = { dono: 'Dono', barbeiro: 'Barbeiro',
 type Turno = { dia_semana: number; inicio: string; fim: string }
 
 export default function Equipe() {
-  const { estado, acoes } = useKort()
+  const { estado, acoes, modo } = useKort()
   const { config } = useMapas()
   const avisar = useAvisar()
   const [aba, setAba] = useState<'dados' | 'ganhos' | 'jornada'>('dados')
@@ -37,8 +37,8 @@ export default function Equipe() {
 
   const salvar = () => {
     const { metaTxt, aluguelTxt, ...resto } = cfg
-    acoes.salvarMembro(m as Membro, { ...resto, meta_diaria_centavos: metaTxt ? paraCentavos(metaTxt) : null, aluguel_cadeira_centavos: aluguelTxt ? paraCentavos(aluguelTxt) : null })
-    if (m?.id) acoes.salvarJornadas(m.id, turnos)
+    const id = acoes.salvarMembro(m as Membro, { ...resto, meta_diaria_centavos: metaTxt ? paraCentavos(metaTxt) : null, aluguel_cadeira_centavos: aluguelTxt ? paraCentavos(aluguelTxt) : null })
+    acoes.salvarJornadas(id, turnos)
     avisar(m?.id ? 'Dados salvos' : `${m?.nome_exibicao} entrou na equipe`)
     setM(null)
   }
@@ -114,10 +114,14 @@ export default function Equipe() {
                   <div className="largo painel" style={{ padding: 14 }}>
                     <div style={{ fontWeight: 600 }}>Acesso pelo celular</div>
                     <p className="muted pequeno" style={{ margin: '4px 0 10px' }}>Mande o convite para {m.nome_exibicao || 'o barbeiro'} criar a senha e ver a própria agenda e comissão.</p>
-                    <a className="btn btn-sec btn-pequeno" target="_blank" rel="noreferrer"
-                      href={`https://wa.me/?text=${encodeURIComponent(`Você foi adicionado na equipe da ${estado.barbearia.nome} no Kort. Crie seu acesso: ${window.location.origin}/criar-conta`)}`}>
-                      <Send /> Enviar convite no WhatsApp
-                    </a>
+                    {modo === 'real' && !(m.id && config.get(m.id)?.convite_token) ? (
+                      <p className="muted pequeno">Salve o cadastro e abra de novo para mandar o convite.</p>
+                    ) : (
+                      <a className="btn btn-sec btn-pequeno" target="_blank" rel="noreferrer"
+                        href={`https://wa.me/?text=${encodeURIComponent(`Você foi adicionado na equipe da ${estado.barbearia.nome} no Kort. Crie seu acesso: ${modo === 'real' ? `${window.location.origin}/convite?m=${m.id}&t=${config.get(m.id!)?.convite_token}` : `${window.location.origin}/criar-conta`}`)}`}>
+                        <Send /> Enviar convite no WhatsApp
+                      </a>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   CalendarDays, Receipt, Users, BarChart3, MessageCircle, Megaphone, Award, Scissors, UserCog, Package, Wallet,
-  Settings, ExternalLink, MoreHorizontal, LogOut,
+  Settings, ExternalLink, MoreHorizontal, LogOut, Shield,
 } from 'lucide-react'
 import { useKort } from '../lib/store'
+import { useSessao } from '../lib/sessao'
+import { deIsoDia, hoje } from '../lib/format'
 import { RailIndicador } from '../components/RailIndicador'
 import { Avatar, Folha } from '../components/ui'
 
@@ -40,10 +42,25 @@ const GRUPOS: Array<{ titulo: string | null; itens: ItemMenu[] }> = [
 ]
 
 export default function AppLayout() {
-  const { estado, acoes } = useKort()
+  const { estado, acoes, modo, salvando } = useKort()
+  const sessao = useSessao()
+  const nav = useNavigate()
   const [mais, setMais] = useState(false)
   const local = useLocation()
   const eu = estado.membros.find((m) => m.id === estado.usuarioMembroId)
+  const a = estado.assinatura
+  const diasTeste = a.status === 'teste' && a.teste_ate ? Math.round((deIsoDia(a.teste_ate).getTime() - hoje().getTime()) / 86400000) : null
+  const PAPEL = { dono: 'Dono', barbeiro: 'Barbeiro', recepcao: 'Recepção' }
+
+  const sair = async () => {
+    if (modo === 'demo') {
+      sessao.sairDemo()
+      nav('/')
+      return
+    }
+    await sessao.sair()
+    nav('/entrar')
+  }
 
   const contadores = {
     comandas: estado.comandas.filter((c) => c.status === 'aberta').length,
@@ -96,11 +113,16 @@ export default function AppLayout() {
             {eu && <Avatar nome={eu.nome_exibicao} cor={eu.cor_agenda} tam={30} />}
             <div className="cresce">
               <div style={{ fontWeight: 600 }}>{eu?.nome_exibicao}</div>
-              <div style={{ fontSize: 12, color: '#84847D' }}>Dono</div>
+              <div style={{ fontSize: 12, color: '#84847D' }}>{salvando ? 'Salvando...' : PAPEL[estado.usuarioPapel]}</div>
             </div>
-            <NavLink to="/entrar" className="btn btn-fantasma btn-icone" aria-label="Sair" style={{ color: '#A3A39C' }}>
+            {sessao.perfil?.super_admin && (
+              <NavLink to="/admin" className="btn btn-fantasma btn-icone" aria-label="Painel Kort" title="Painel Kort" style={{ color: '#A3A39C' }}>
+                <Shield size={17} />
+              </NavLink>
+            )}
+            <button onClick={sair} className="btn btn-fantasma btn-icone" aria-label="Sair" title="Sair" style={{ color: '#A3A39C' }}>
               <LogOut size={17} />
-            </NavLink>
+            </button>
           </div>
         </div>
       </aside>
@@ -113,10 +135,23 @@ export default function AppLayout() {
           </a>
         </header>
 
-        <div className="faixa-demo">
-          Modo demonstração<span className="longo">: os dados ficam só neste navegador</span>.
-          <button onClick={() => acoes.resetarDemo()}>Recomeçar dados</button>
-        </div>
+        {modo === 'demo' ? (
+          <div className="faixa-demo">
+            Modo demonstração<span className="longo">: os dados ficam só neste navegador</span>.
+            <button onClick={() => acoes.resetarDemo()}>Recomeçar dados</button>
+            <button onClick={sair}>Sair</button>
+          </div>
+        ) : a.status === 'inadimplente' || a.status === 'suspensa' ? (
+          <div className="faixa-demo faixa-perigo">
+            {a.status === 'suspensa' ? 'Sua página de agendamento está fora do ar.' : 'A mensalidade do Kort está atrasada.'}
+            <Link to="/app/configuracoes?aba=plano">Pagar agora</Link>
+          </div>
+        ) : diasTeste !== null && diasTeste <= 5 ? (
+          <div className="faixa-demo">
+            {diasTeste <= 0 ? 'Seu teste grátis acaba hoje.' : `Faltam ${diasTeste} ${diasTeste === 1 ? 'dia' : 'dias'} de teste grátis.`}
+            <Link to="/app/configuracoes?aba=plano">Escolher plano</Link>
+          </div>
+        ) : null}
 
         <main className={telaCheia ? 'main-cheia' : 'pagina'}>
           <div key={local.pathname} className={telaCheia ? 'main-cheia' : 'entrada-pagina'}>

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { MessageCircle, Plus, Send } from 'lucide-react'
 import { useKort, useMapas } from '../../lib/store'
-import { dataRelativa, deIsoDia, diasEntre, hoje, isoDia, primeiroNome, telefone, tempoAtras } from '../../lib/format'
-import type { ModeloMensagem, TipoMensagem } from '../../lib/types'
+import { dataRelativa, deIsoDia, diasEntre, hoje, hora, isoDia, primeiroNome, somaDias, telefone, tempoAtras, linkPublico } from '../../lib/format'
+import type { Agendamento, ModeloMensagem, TipoMensagem } from '../../lib/types'
 import { CabecalhoPagina, Campo, Folha, Metricas, Switch, Vazio } from '../../components/ui'
 import { whatsLink } from '../../components/folhas'
 import { useAvisar } from '../../components/avisos'
 
-type Aba = 'automaticas' | 'resgate' | 'espera' | 'enviadas'
+type Aba = 'mandar' | 'automaticas' | 'resgate' | 'espera' | 'enviadas'
 
 const INFO: Record<TipoMensagem, { nome: string; quando: string }> = {
   confirmacao: { nome: 'Confirmação', quando: 'Logo depois que o horário é marcado' },
@@ -25,7 +25,7 @@ export default function Mensagens() {
   const { estado, acoes } = useKort()
   const { cliente, membro, servico } = useMapas()
   const avisar = useAvisar()
-  const [aba, setAba] = useState<Aba>('automaticas')
+  const [aba, setAba] = useState<Aba>('mandar')
   const [editando, setEditando] = useState<ModeloMensagem | null>(null)
   const [novaEspera, setNovaEspera] = useState(false)
   const [esp, setEsp] = useState({ clienteId: '', membroId: '', servicoId: '', data: isoDia(hoje()), de: '', ate: '' })
@@ -33,7 +33,7 @@ export default function Mensagens() {
   const b = estado.barbearia
   const exemplo = (t: string) =>
     t.replace('{cliente}', 'Matheus').replace('{barbeiro}', 'Pedrinho').replace('{data}', 'quinta, 15/10').replace('{horario}', '15:30')
-      .replace('{servico}', 'Corte degradê').replace('{barbearia}', b.nome).replace('{link}', `kort.app/b/${b.slug}`).replace('{desconto}', '10%')
+      .replace('{servico}', 'Corte degradê').replace('{barbearia}', b.nome).replace('{link}', linkPublico(b.slug)).replace('{desconto}', '10%')
       .replace('{faturamento}', 'R$ 1.385').replace('{atendimentos}', '23').replace('{faltas}', '1').replace('{agendados}', '19')
 
   const sumidos = estado.clientes
@@ -48,20 +48,25 @@ export default function Mensagens() {
   const lidas = mes.filter((m) => m.status === 'lida').length
   const geraram = mes.filter((m) => m.gerou_agendamento).length
 
+  const pendentesEnvio = usePendentes().filter((p) => !p.enviado).length
+
   const modeloResgate = estado.modelos.find((m) => m.tipo === 'resgate')?.texto ?? ''
   const textoResgate = (nome: string) =>
-    modeloResgate.replace('{cliente}', primeiroNome(nome)).replace('{barbearia}', b.nome).replace('{desconto}', '10%').replace('{link}', `kort.app/b/${b.slug}`)
+    modeloResgate.replace('{cliente}', primeiroNome(nome)).replace('{barbearia}', b.nome).replace('{desconto}', '10%').replace('{link}', linkPublico(b.slug))
 
   return (
     <>
-      <CabecalhoPagina titulo="Mensagens" sub="Lembretes e convites que saem sozinhos pelo WhatsApp da barbearia. Você escreve uma vez, do seu jeito." />
+      <CabecalhoPagina titulo="Mensagens" sub="Lembretes e convites com o texto pronto. Um toque abre a conversa no seu WhatsApp; você só aperta enviar." />
 
       <div className="abas" role="tablist">
-        <button role="tab" aria-selected={aba === 'automaticas'} onClick={() => setAba('automaticas')}>Automáticas</button>
+        <button role="tab" aria-selected={aba === 'mandar'} onClick={() => setAba('mandar')}>Para mandar <span className="muted">{pendentesEnvio}</span></button>
+        <button role="tab" aria-selected={aba === 'automaticas'} onClick={() => setAba('automaticas')}>Textos</button>
         <button role="tab" aria-selected={aba === 'resgate'} onClick={() => setAba('resgate')}>Clientes sumidos <span className="muted">{sumidos.length}</span></button>
         <button role="tab" aria-selected={aba === 'espera'} onClick={() => setAba('espera')}>Lista de espera <span className="muted">{espera.length}</span></button>
         <button role="tab" aria-selected={aba === 'enviadas'} onClick={() => setAba('enviadas')}>Resultado</button>
       </div>
+
+      {aba === 'mandar' && <ParaMandar />}
 
       {aba === 'automaticas' && (
         <div className="painel">
@@ -142,7 +147,7 @@ export default function Mensagens() {
                     {l.status === 'avisado' && <span className="tag tag-info">Avisado</span>}
                     {c && (
                       <a className="btn btn-sec btn-pequeno" target="_blank" rel="noreferrer"
-                        href={whatsLink(c.telefone, `${primeiroNome(c.nome)}, abriu um horário ${dataRelativa(l.data)} aqui na ${b.nome}. Quer? Garanta: kort.app/b/${b.slug}`)}
+                        href={whatsLink(c.telefone, `${primeiroNome(c.nome)}, abriu um horário ${dataRelativa(l.data)} aqui na ${b.nome}. Quer? Garanta: ${linkPublico(b.slug)}`)}
                         onClick={() => { acoes.mudarListaEspera(l.id, 'avisado'); acoes.registrarMensagem(c.id, 'lista_espera', '') }}>
                         <Send /> Avisar
                       </a>
@@ -167,7 +172,7 @@ export default function Mensagens() {
             { rot: 'Falharam', val: mes.filter((m) => m.status === 'falhou').length, det: 'Número errado ou sem WhatsApp' },
           ]} />
           <p className="muted pequeno" style={{ marginTop: 14 }}>
-            O envio automático usa o WhatsApp da barbearia conectado em Configurações. Até lá, os botões "Chamar" e "Avisar" abrem a conversa pronta no seu WhatsApp.
+            Conta as mensagens abertas pelos botões do Kort. "Lidas" aparece quando o envio automático for ligado.
           </p>
         </>
       )}
@@ -220,5 +225,96 @@ export default function Mensagens() {
         </div>
       </Folha>
     </>
+  )
+}
+
+// ---------- lembretes de amanhã e confirmações de quem marcou pelo link
+
+function usePendentes() {
+  const { estado } = useKort()
+  const { cliente, membro } = useMapas()
+  const b = estado.barbearia
+  const modelo = (t: TipoMensagem) => estado.modelos.find((m) => m.tipo === t && m.ativo)?.texto
+  const enviados = new Set(estado.mensagens.filter((m) => m.agendamento_id).map((m) => `${m.agendamento_id}:${m.tipo}`))
+  const amanha = isoDia(somaDias(hoje(), 1))
+  const ativos = estado.agendamentos.filter((a) => a.status === 'agendado' || a.status === 'confirmado')
+
+  const preencher = (texto: string, a: Agendamento) => {
+    const c = cliente.get(a.cliente_id)
+    const link = `${linkPublico(b.slug)}/horario/${a.id}${a.token_publico ? `?t=${a.token_publico}` : ''}`
+    return texto
+      .split('{cliente}').join(primeiroNome(c?.nome ?? ''))
+      .split('{barbeiro}').join(membro.get(a.membro_id)?.nome_exibicao ?? '')
+      .split('{data}').join(dataRelativa(a.inicio))
+      .split('{horario}').join(hora(a.inicio))
+      .split('{servico}').join(a.servicos.map((s) => s.nome).join(' + '))
+      .split('{barbearia}').join(b.nome)
+      .split('{link}').join(link)
+      .split('{desconto}').join('10%')
+  }
+
+  const lista: Array<{ a: Agendamento; tipo: TipoMensagem; texto: string; enviado: boolean }> = []
+  const mLembrete = modelo('lembrete_24h')
+  if (mLembrete) {
+    for (const a of ativos.filter((x) => isoDia(new Date(x.inicio)) === amanha)) {
+      lista.push({ a, tipo: 'lembrete_24h', texto: preencher(mLembrete, a), enviado: enviados.has(`${a.id}:lembrete_24h`) })
+    }
+  }
+  const mConf = modelo('confirmacao')
+  if (mConf) {
+    const limite = Date.now() - 2 * 86400000
+    for (const a of ativos.filter((x) => x.origem === 'link' && new Date(x.criado_em).getTime() > limite && new Date(x.inicio) > new Date())) {
+      if (isoDia(new Date(a.inicio)) === amanha && mLembrete) continue // o lembrete já cobre
+      lista.push({ a, tipo: 'confirmacao', texto: preencher(mConf, a), enviado: enviados.has(`${a.id}:confirmacao`) })
+    }
+  }
+  return lista.sort((x, y) => Number(x.enviado) - Number(y.enviado) || x.a.inicio.localeCompare(y.a.inicio))
+}
+
+function ParaMandar() {
+  const { acoes } = useKort()
+  const { cliente, membro } = useMapas()
+  const avisar = useAvisar()
+  const lista = usePendentes()
+  const falta = lista.filter((p) => !p.enviado)
+
+  return (
+    <div className="painel">
+      <div className="painel-cab">
+        <h2>{falta.length ? `${falta.length} ${falta.length === 1 ? 'mensagem' : 'mensagens'} para mandar` : 'Tudo enviado'}</h2>
+        <span className="muted pequeno">Lembrete de quem vem amanhã e confirmação de quem marcou pelo link.</span>
+      </div>
+      {lista.length ? (
+        <ul className="lista" style={{ padding: '6px 18px 4px' }}>
+          {lista.map(({ a, tipo, texto, enviado }) => {
+            const c = cliente.get(a.cliente_id)
+            if (!c) return null
+            return (
+              <li key={`${a.id}-${tipo}`} style={{ opacity: enviado ? 0.55 : 1 }}>
+                <div className="cresce">
+                  <div style={{ fontWeight: 600 }}>{c.nome}</div>
+                  <div className="muted pequeno">
+                    {tipo === 'lembrete_24h' ? 'Lembrete' : 'Confirmação'}: {dataRelativa(a.inicio)} às {hora(a.inicio)} com {membro.get(a.membro_id)?.nome_exibicao}
+                    {a.status === 'confirmado' && ', já confirmou'}
+                  </div>
+                </div>
+                {enviado ? (
+                  <span className="tag tag-ok">Enviado</span>
+                ) : !c.aceita_mensagens ? (
+                  <span className="muted pequeno">Não quer mensagens</span>
+                ) : (
+                  <a className="btn btn-primario btn-pequeno" href={whatsLink(c.telefone, texto)} target="_blank" rel="noreferrer"
+                    onClick={() => { acoes.registrarMensagem(c.id, tipo, texto, a.id); avisar(`Conversa com ${primeiroNome(c.nome)} aberta`) }}>
+                    <Send /> Mandar
+                  </a>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <Vazio titulo="Nada para mandar agora" texto="Quando tiver gente marcada para amanhã, o lembrete de cada um aparece aqui com o texto pronto." />
+      )}
+    </div>
   )
 }

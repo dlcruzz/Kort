@@ -37,7 +37,7 @@ export default function AdminFaturas() {
                   <td style={{ textTransform: 'capitalize' }}>{nomeMes(deIsoDia(x.competencia).getMonth())}</td>
                   <td className="num">{dataCompleta(x.vencimento)}</td>
                   <td className="dir num">{dinheiro(x.valor_centavos)}</td>
-                  <td>{x.status === 'paga' ? <span className="tag tag-ok">Paga {x.pago_em ? dataCompleta(x.pago_em) : ''}</span> : x.status === 'vencida' ? <span className="tag tag-perigo">Vencida</span> : x.status === 'cancelada' ? <span className="tag">Cancelada</span> : <span className="tag tag-alerta">Em aberto</span>}</td>
+                  <td>{x.status === 'paga' ? <span className="tag tag-ok">Paga {x.pago_em ? dataCompleta(x.pago_em) : ''}</span> : x.status === 'vencida' ? <span className="tag tag-perigo">Vencida</span> : x.status === 'cancelada' ? <span className="tag">Cancelada</span> : <span className="tag tag-alerta">Em aberto</span>}{x.informado_em && x.status !== 'paga' && <span className="tag tag-info" style={{ marginLeft: 6 }}>Avisou que pagou</span>}</td>
                   <td className="dir">{(x.status === 'aberta' || x.status === 'vencida') && <button className="btn btn-primario btn-pequeno" onClick={() => setBaixa(x.id)}>Dar baixa</button>}</td>
                 </tr>
               ))}

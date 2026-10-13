@@ -65,6 +65,7 @@ export interface MembroConfiguracao {
   aluguel_cadeira_centavos: Centavos | null
   dia_vencimento_aluguel: number | null
   eh_mei: boolean
+  convite_token?: string | null
 }
 
 export interface HorarioFuncionamento {
@@ -142,6 +143,7 @@ export interface Agendamento {
   confirmado_em: string | null
   servicos: AgendamentoServico[]
   criado_em: string
+  token_publico?: string
 }
 
 export interface ComandaItem {
@@ -226,6 +228,7 @@ export interface Mensagem {
   status: 'pendente' | 'enviada' | 'entregue' | 'lida' | 'falhou' | 'cancelada'
   enviada_em: string | null
   gerou_agendamento: boolean
+  agendamento_id?: string | null
 }
 
 export interface Cupom {
@@ -311,6 +314,8 @@ export interface Fatura {
   status: StatusFatura
   pix_copia_cola: string | null
   pago_em: string | null
+  txid?: string | null
+  informado_em?: string | null
 }
 
 export interface Sugestao {

@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useAdmin } from '../../lib/adminStore'
-import { adminMrrHistorico, adminUso, NOME_MODULO } from '../../data/admin'
+import { NOME_MODULO } from '../../data/admin'
 import { dataCurta, dinheiroCurto, hoje, nomeMes, tempoAtras } from '../../lib/format'
 import { CabecalhoPagina, Metricas } from '../../components/ui'
 import { BarrasHorizontais, BarrasVerticais } from '../../components/graficos'
 import { emRisco, StatusAssinatura } from './comum'
 
 export default function AdminVisao() {
-  const { barbearias, faturas } = useAdmin()
+  const { barbearias, faturas, uso: adminUso, mrrHistorico: adminMrrHistorico } = useAdmin()
   const ativas = barbearias.filter((b) => b.status_assinatura === 'ativa')
   const mrr = ativas.reduce((t, b) => t + b.preco_centavos, 0)
   const teste = barbearias.filter((b) => b.status_assinatura === 'teste')

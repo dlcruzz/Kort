@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Copy, ThumbsUp, Plus, Smartphone } from 'lucide-react'
 import { useKort } from '../../lib/store'
-import { dataCompleta, dinheiro, nomeDia, nomeMes, deIsoDia } from '../../lib/format'
+import { dataCompleta, dinheiro, nomeDia, nomeMes, deIsoDia, dominio } from '../../lib/format'
 import { pixCopiaECola } from '../../lib/pix'
 import { CabecalhoPagina, Campo, Confirmar, Folha, Segmentos, Switch } from '../../components/ui'
 import { PixQr } from '../../components/PixQr'
@@ -10,10 +11,14 @@ import { PLANOS } from '../Site'
 
 type Aba = 'barbearia' | 'horarios' | 'whatsapp' | 'plano' | 'sugestoes'
 
-const CHAVE_PIX = (import.meta.env.VITE_KORT_PIX_CHAVE as string | undefined) || 'chave-pix-do-kort'
+const CHAVE_PIX = (import.meta.env.VITE_KORT_PIX_CHAVE as string | undefined) || ''
+const PIX_NOME = (import.meta.env.VITE_KORT_PIX_NOME as string | undefined) || 'KORT'
+const PIX_CIDADE = (import.meta.env.VITE_KORT_PIX_CIDADE as string | undefined) || 'SAO PAULO'
+const DOMINIO = dominio()
 
 export default function Configuracoes() {
-  const [aba, setAba] = useState<Aba>('barbearia')
+  const [params] = useSearchParams()
+  const [aba, setAba] = useState<Aba>(() => (params.get('aba') as Aba) || 'barbearia')
   return (
     <>
       <CabecalhoPagina titulo="Configurações" />
@@ -34,7 +39,7 @@ export default function Configuracoes() {
 }
 
 function DadosBarbearia() {
-  const { estado, acoes } = useKort()
+  const { estado, acoes, modo } = useKort()
   const avisar = useAvisar()
   const [b, setB] = useState(estado.barbearia)
   const [reset, setReset] = useState(false)
@@ -50,8 +55,9 @@ function DadosBarbearia() {
           <Campo rotulo="Número" id="cf-num"><input id="cf-num" className="input" value={b.numero ?? ''} onChange={(e) => set('numero', e.target.value)} /></Campo>
           <Campo rotulo="Bairro" id="cf-bai"><input id="cf-bai" className="input" value={b.bairro ?? ''} onChange={(e) => set('bairro', e.target.value)} /></Campo>
           <Campo rotulo="Cidade" id="cf-cid"><input id="cf-cid" className="input" value={b.cidade ?? ''} onChange={(e) => set('cidade', e.target.value)} /></Campo>
+          <Campo rotulo="WhatsApp da barbearia" id="cf-wa" ajuda="O cliente fala com você por esse número."><input id="cf-wa" className="input" inputMode="tel" value={b.whatsapp ?? ''} onChange={(e) => set('whatsapp', e.target.value.replace(/[^0-9+]/g, ''))} placeholder="+5511900000000" /></Campo>
           <Campo rotulo="Instagram" id="cf-ig"><input id="cf-ig" className="input" value={b.instagram ?? ''} onChange={(e) => set('instagram', e.target.value)} /></Campo>
-          <Campo rotulo="Link" id="cf-slug"><div className="input-prefixo"><span style={{ fontSize: 13 }}>kort.app/b/</span><input id="cf-slug" className="input" style={{ paddingLeft: 88 }} value={b.slug} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} /></div></Campo>
+          <Campo rotulo="Link" id="cf-slug"><div className="input-prefixo"><span style={{ fontSize: 13 }}>{DOMINIO}/b/</span><input id="cf-slug" className="input" style={{ paddingLeft: 88 }} value={b.slug} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} /></div></Campo>
           <div className="largo"><Switch checked={b.publicada} onChange={(v) => set('publicada', v)}>Página de agendamento no ar</Switch></div>
           <button className="btn btn-primario largo" style={{ justifySelf: 'start' }} onClick={() => { acoes.salvarBarbearia(b); avisar('Dados salvos') }}>Salvar</button>
         </div>
@@ -82,13 +88,13 @@ function DadosBarbearia() {
             <button className="btn btn-sec" style={{ alignSelf: 'flex-start' }} onClick={() => { acoes.salvarBarbearia(b); avisar('Regras salvas') }}>Salvar regras</button>
           </div>
         </section>
-        <section className="painel">
+        {modo === 'demo' && <section className="painel">
           <div className="painel-cab"><h2>Demonstração</h2></div>
           <div className="painel-corpo">
             <p className="muted pequeno" style={{ marginBottom: 12 }}>Apaga o que você testou e volta aos dados de exemplo.</p>
             <button className="btn btn-perigo" onClick={() => setReset(true)}>Recomeçar dados de exemplo</button>
           </div>
-        </section>
+        </section>}
       </div>
       <Confirmar aberto={reset} titulo="Recomeçar a demonstração?" texto="Tudo o que você criou neste navegador some." acao="Recomeçar" perigo aoCancelar={() => setReset(false)} aoConfirmar={() => { acoes.resetarDemo(); setReset(false); window.location.reload() }} />
     </div>
@@ -136,31 +142,50 @@ function WhatsApp() {
           <div>
             <h2 style={{ fontFamily: 'var(--f-texto)', fontSize: 17, fontWeight: 700 }}>WhatsApp da barbearia não conectado</h2>
             <p className="muted pequeno" style={{ marginTop: 4 }}>
-              Conectando o número, a confirmação, os lembretes e os convites saem sozinhos. Sem conectar, o Kort abre a conversa pronta no seu celular e você só aperta enviar.
+              Por enquanto as mensagens saem do seu próprio WhatsApp: em Mensagens, a lista "Lembretes de amanhã" abre cada conversa com o texto pronto e você só aperta enviar. O envio automático chega numa próxima versão.
             </p>
           </div>
         </div>
         <ol className="pequeno" style={{ margin: '18px 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <li>Use um número de WhatsApp Business só da barbearia.</li>
-          <li>Clique em conectar e leia o código com o celular.</li>
-          <li>Pronto. As mensagens saem com o nome da sua barbearia.</li>
+          <li>Todo fim de tarde, abra Mensagens e mande os lembretes de amanhã.</li>
+          <li>Cada lembrete leva o link para o cliente confirmar, mudar ou cancelar.</li>
+          <li>Quem confirma pelo link aparece como confirmado na agenda.</li>
         </ol>
-        <button className="btn btn-primario" disabled>Conectar WhatsApp</button>
-        <p className="muted pequeno" style={{ marginTop: 8 }}>Disponível quando o envio automático for ligado no servidor.</p>
+        <button className="btn btn-primario" disabled>Conectar WhatsApp automático</button>
+        <p className="muted pequeno" style={{ marginTop: 8 }}>Em breve.</p>
       </div>
     </section>
   )
 }
 
+const NOME_STATUS: Record<string, [string, string]> = {
+  ativa: ['Ativo', 'tag-ok'], teste: ['Em teste', 'tag-info'], inadimplente: ['Pagamento atrasado', 'tag-perigo'],
+  suspensa: ['Suspenso', 'tag-perigo'], cancelada: ['Cancelado', 'tag-perigo'],
+}
+
 function Plano() {
-  const { estado, acoes } = useKort()
+  const { estado, acoes, modo } = useKort()
   const avisar = useAvisar()
   const [trocar, setTrocar] = useState(false)
+  const [escolhido, setEscolhido] = useState<(typeof PLANOS)[number] | null>(null)
   const a = estado.assinatura
   const aberta = estado.faturas.find((f) => f.status === 'aberta' || f.status === 'vencida')
-  const codigo = aberta
-    ? pixCopiaECola({ chave: CHAVE_PIX, valorCentavos: aberta.valor_centavos, nome: 'KORT', cidade: 'SAO PAULO', txid: `KORT${aberta.id.replace(/-/g, '').slice(0, 16)}`, descricao: `Kort ${nomeMes(deIsoDia(aberta.competencia).getMonth())}` })
+  const chave = CHAVE_PIX || (modo === 'demo' ? 'chave-pix-do-kort' : '')
+  const codigo = aberta && chave
+    ? pixCopiaECola({
+        chave, valorCentavos: aberta.valor_centavos, nome: PIX_NOME, cidade: PIX_CIDADE,
+        txid: aberta.txid ?? `KORT${aberta.id.replace(/-/g, '').slice(0, 16)}`,
+        descricao: `Kort ${nomeMes(deIsoDia(aberta.competencia).getMonth())}`,
+      })
     : ''
+  const [rotulo, classe] = NOME_STATUS[a.status] ?? ['', '']
+  const linhaPlano =
+    a.status === 'teste' && a.teste_ate
+      ? `Teste grátis até ${dataCompleta(a.teste_ate)}. Depois, ${a.preco_centavos ? `${dinheiro(a.preco_centavos)} por mês` : 'grátis'}.`
+      : a.preco_centavos === 0
+        ? 'Grátis, até 50 horários por mês.'
+        : `${dinheiro(a.preco_centavos)} por mês${a.proximo_vencimento ? `, vence dia ${deIsoDia(a.proximo_vencimento).getDate()}` : ''}`
+
   return (
     <div className="duas-colunas">
       <div className="pilha">
@@ -169,31 +194,48 @@ function Plano() {
             <div>
               <div className="muted pequeno">Seu plano</div>
               <div className="display" style={{ fontSize: 40 }}>{a.plano}</div>
-              <div className="pequeno">{dinheiro(a.preco_centavos)} por mês, vence dia {deIsoDia(a.proximo_vencimento).getDate()}</div>
+              <div className="pequeno">{linhaPlano}</div>
             </div>
             <div className="linha-flex">
-              <span className={`tag ${a.status === 'ativa' ? 'tag-ok' : a.status === 'teste' ? 'tag-info' : 'tag-perigo'}`}>{a.status === 'ativa' ? 'Ativo' : a.status === 'teste' ? 'Em teste' : 'Pagamento atrasado'}</span>
-              <button className="btn btn-sec btn-pequeno" onClick={() => setTrocar(true)}>Trocar plano</button>
+              <span className={`tag ${classe}`}>{rotulo}</span>
+              {estado.usuarioPapel === 'dono' && <button className="btn btn-sec btn-pequeno" onClick={() => setTrocar(true)}>Trocar plano</button>}
             </div>
           </div>
+          {a.status === 'suspensa' && (
+            <p className="painel-corpo pequeno" style={{ color: 'var(--perigo)', paddingTop: 0 }}>
+              Sua página de agendamento está fora do ar por falta de pagamento. Pague a mensalidade ao lado e ela volta assim que a baixa for feita.
+            </p>
+          )}
         </section>
         <section className="painel">
           <div className="painel-cab"><h2>Mensalidades</h2></div>
-          <div className="tabela-wrap" style={{ marginTop: 8 }}>
-            <table className="tabela">
-              <thead><tr><th>Mês</th><th>Vencimento</th><th className="dir">Valor</th><th>Situação</th></tr></thead>
-              <tbody>
-                {[...estado.faturas].reverse().map((f) => (
-                  <tr key={f.id}>
-                    <td style={{ textTransform: 'capitalize' }}>{nomeMes(deIsoDia(f.competencia).getMonth())}</td>
-                    <td className="num">{dataCompleta(f.vencimento)}</td>
-                    <td className="dir num">{dinheiro(f.valor_centavos)}</td>
-                    <td>{f.status === 'paga' ? <span className="tag tag-ok">Paga</span> : f.status === 'vencida' ? <span className="tag tag-perigo">Vencida</span> : <span className="tag tag-alerta">Em aberto</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {estado.faturas.length === 0 ? (
+            <p className="painel-corpo muted pequeno">
+              {a.status === 'teste' ? 'A primeira mensalidade aparece aqui quando o teste acabar.' : 'Nenhuma mensalidade ainda.'}
+            </p>
+          ) : (
+            <div className="tabela-wrap" style={{ marginTop: 8 }}>
+              <table className="tabela">
+                <thead><tr><th>Mês</th><th>Vencimento</th><th className="dir">Valor</th><th>Situação</th></tr></thead>
+                <tbody>
+                  {[...estado.faturas].reverse().map((f) => (
+                    <tr key={f.id}>
+                      <td style={{ textTransform: 'capitalize' }}>{nomeMes(deIsoDia(f.competencia).getMonth())}</td>
+                      <td className="num">{dataCompleta(f.vencimento)}</td>
+                      <td className="dir num">{dinheiro(f.valor_centavos)}</td>
+                      <td>
+                        {f.status === 'paga' ? <span className="tag tag-ok">Paga</span>
+                          : f.status === 'cancelada' ? <span className="tag">Cancelada</span>
+                          : f.informado_em ? <span className="tag tag-info">Conferindo</span>
+                          : f.status === 'vencida' ? <span className="tag tag-perigo">Vencida</span>
+                          : <span className="tag tag-alerta">Em aberto</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </div>
 
@@ -205,11 +247,25 @@ function Plano() {
               <p className="pequeno">
                 {dinheiro(aberta.valor_centavos)} referente a {nomeMes(deIsoDia(aberta.competencia).getMonth())}, vence {dataCompleta(aberta.vencimento)}. Pague no Pix, pelo QR code ou copiando o código.
               </p>
-              <PixQr codigo={codigo} />
-              <textarea className="textarea" readOnly value={codigo} aria-label="Pix copia e cola" style={{ fontSize: 12, minHeight: 80 }} />
-              <button className="btn btn-primario" onClick={async () => { await navigator.clipboard?.writeText(codigo).catch(() => {}); avisar('Código Pix copiado') }}><Copy /> Copiar código Pix</button>
-              <p className="muted pequeno">A baixa acontece em até 1 dia útil depois que o Pix cair.</p>
-              <button className="btn btn-fantasma btn-pequeno" onClick={() => { acoes.pagarFatura(aberta.id); avisar('Pagamento registrado (demonstração)') }}>Simular pagamento</button>
+              {codigo ? (
+                <>
+                  <PixQr codigo={codigo} />
+                  <textarea className="textarea" readOnly value={codigo} aria-label="Pix copia e cola" style={{ fontSize: 12, minHeight: 80 }} />
+                  <button className="btn btn-primario" onClick={async () => { await navigator.clipboard?.writeText(codigo).catch(() => {}); avisar('Código Pix copiado') }}><Copy /> Copiar código Pix</button>
+                </>
+              ) : (
+                <p className="pequeno" style={{ color: 'var(--perigo)' }}>O Pix ainda não foi configurado. Fale com o suporte do Kort.</p>
+              )}
+              {aberta.informado_em ? (
+                <p className="pequeno"><b>Pagamento avisado em {dataCompleta(aberta.informado_em)}.</b> A baixa acontece em até 1 dia útil.</p>
+              ) : (
+                <>
+                  <p className="muted pequeno">Depois de pagar, avise aqui. A baixa acontece em até 1 dia útil.</p>
+                  <button className="btn btn-sec" onClick={() => { acoes.pagarFatura(aberta.id); avisar(modo === 'demo' ? 'Pagamento registrado (demonstração)' : 'Recebemos o aviso. Obrigado!') }}>
+                    {modo === 'demo' ? 'Simular pagamento' : 'Já paguei'}
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <p className="muted pequeno">Nenhuma mensalidade em aberto. A próxima aparece aqui perto do vencimento.</p>
@@ -217,20 +273,34 @@ function Plano() {
         </div>
       </section>
 
-      <Folha aberta={trocar} aoFechar={() => setTrocar(false)} titulo="Trocar plano" subtitulo="A diferença entra na próxima mensalidade.">
+      <Folha aberta={trocar} aoFechar={() => setTrocar(false)} titulo="Trocar plano" subtitulo="O valor novo vale para a próxima mensalidade.">
         <div className="coluna gap-8">
           {PLANOS.map((p) => (
-            <div key={p.nome} className="painel linha-flex" style={{ padding: 14, borderColor: p.nome === a.plano ? 'var(--preto)' : undefined }}>
+            <div key={p.nome} className="painel linha-flex" style={{ padding: 14, borderColor: p.slug === a.plano_slug ? 'var(--preto)' : undefined }}>
               <div className="cresce">
                 <div style={{ fontWeight: 700 }}>{p.nome}</div>
                 <div className="muted pequeno">{p.pq}</div>
               </div>
               <b className="num">{dinheiro(p.preco)}</b>
-              {p.nome === a.plano ? <span className="tag tag-preto">Atual</span> : <button className="btn btn-sec btn-pequeno" onClick={() => { setTrocar(false); avisar(`Pedido de troca para ${p.nome} enviado`) }}>Escolher</button>}
+              {p.slug === a.plano_slug ? <span className="tag tag-preto">Atual</span> : <button className="btn btn-sec btn-pequeno" onClick={() => { setTrocar(false); setEscolhido(p) }}>Escolher</button>}
             </div>
           ))}
         </div>
       </Folha>
+      <Confirmar
+        aberto={!!escolhido}
+        titulo={`Mudar para o plano ${escolhido?.nome}?`}
+        texto={escolhido?.preco ? `A mensalidade passa a ser ${dinheiro(escolhido.preco)}.` : 'No plano grátis a página aceita até 50 horários por mês.'}
+        acao="Mudar plano"
+        aoCancelar={() => setEscolhido(null)}
+        aoConfirmar={() => {
+          if (escolhido) {
+            acoes.escolherPlano(escolhido.slug, escolhido.nome, escolhido.preco)
+            avisar(`Plano ${escolhido.nome} escolhido`)
+          }
+          setEscolhido(null)
+        }}
+      />
     </div>
   )
 }

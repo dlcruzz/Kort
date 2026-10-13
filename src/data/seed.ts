@@ -6,7 +6,7 @@ import type {
   Agendamento, AluguelCadeira, AssinaturaClube, Avaliacao, Barbearia, Bloqueio, Cliente, Comanda,
   Cupom, Despesa, Fatura, FidelidadeMovimento, FotoPortfolio, HorarioFuncionamento, Jornada,
   ListaEspera, Membro, MembroConfiguracao, Mensagem, ModeloMensagem, PlanoClube, Produto,
-  ProgramaFidelidade, Promocao, Servico, Sugestao,
+  ProgramaFidelidade, Promocao, Servico, Sugestao, StatusAssinSaas, PapelMembro,
 } from '../lib/types'
 import { hoje, isoDia, somaDias, somaMinutos, uid } from '../lib/format'
 
@@ -49,11 +49,12 @@ export interface Estado {
   portfolio: FotoPortfolio[]
   faturas: Fatura[]
   sugestoes: Sugestao[]
-  assinatura: { plano: string; preco_centavos: number; status: 'teste' | 'ativa' | 'inadimplente'; teste_ate: string | null; proximo_vencimento: string }
+  assinatura: { plano: string; plano_slug: string; preco_centavos: number; status: StatusAssinSaas; teste_ate: string | null; proximo_vencimento: string | null }
   usuarioMembroId: string
+  usuarioPapel: PapelMembro
 }
 
-export const VERSAO_SEED = 5
+export const VERSAO_SEED = 6
 
 export function criarSeed(): Estado {
   const r = rng(77)
@@ -434,9 +435,10 @@ export function criarSeed(): Estado {
     comandas, produtos, despesas, alugueis, listaEspera, modelos, mensagens, cupons, promocoes,
     fidelidade, movimentosFidelidade, planosClube, assinaturasClube, avaliacoes, portfolio, faturas, sugestoes,
     assinatura: {
-      plano: 'Barbearia', preco_centavos: 7990, status: 'ativa', teste_ate: null,
+      plano: 'Barbearia', plano_slug: 'barbearia', preco_centavos: 7990, status: 'ativa', teste_ate: null,
       proximo_vencimento: isoDia(new Date(h.getFullYear(), h.getMonth() + (h.getDate() < 10 ? 0 : 1), 10)),
     },
     usuarioMembroId: ze.id,
+    usuarioPapel: 'dono',
   }
 }

@@ -369,6 +369,7 @@
   color: var(--lamina);
   text-align: center;
 }
+.faixa-demo a,
 .faixa-demo button {
   border: 0;
   background: none;
@@ -377,6 +378,13 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   font-size: 12.5px;
+}
+.faixa-perigo {
+  background: var(--perigo);
+  color: var(--papel);
+}
+.faixa-perigo a {
+  color: var(--papel);
 }
 
 @media (max-width: 900px) {

@@ -2,6 +2,8 @@
 
 Back-end em Node.js + TypeScript (Fastify). Conversa com o mesmo banco do Supabase (`../supabase/schema.sql`).
 
+> **Opcional por enquanto.** Na fase de validação o Kort roda só com o Supabase: o agendamento pelo link, a mensalidade e o painel estão em funções do banco (`../supabase/producao.sql`) e as mensagens saem pelo WhatsApp do barbeiro. Este servidor entra quando houver VPS, para o WhatsApp automático. Ele usa o mesmo banco, mas o link "meu horário" dele usa token assinado (HMAC) em vez do `token_publico` do banco; ao ligar, troque `lib/token.ts` para ler `agendamentos.token_publico`.
+
 ## Rodar
 
 ```bash

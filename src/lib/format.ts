@@ -188,3 +188,7 @@ export const LABEL_ORIGEM: Record<string, string> = {
   lista_espera: 'Lista de espera',
   mensagem: 'Mensagem de retorno',
 }
+
+/** Endereço da página pública, no domínio onde o app está publicado. */
+export const dominio = () => (typeof window !== 'undefined' ? window.location.host : 'kort.app')
+export const linkPublico = (slug: string) => `${typeof window !== 'undefined' ? window.location.origin : 'https://kort.app'}/b/${slug}`

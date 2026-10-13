@@ -21,7 +21,8 @@ export const MODULOS = ['agenda', 'lembretes', 'link_publico', 'fidelidade', 'cl
 export const NOME_MODULO: Record<string, string> = {
   agenda: 'Agenda', lembretes: 'Lembretes no WhatsApp', link_publico: 'Agendamento pelo link', fidelidade: 'Fidelidade',
   clube: 'Clube de assinatura', estoque: 'Estoque', relatorios: 'Relatórios', caixa: 'Caixa', marketing: 'Horários no status',
-  lista_espera: 'Lista de espera', financeiro: 'Despesas',
+  lista_espera: 'Lista de espera', financeiro: 'Despesas', conta: 'Conta e plano', servico: 'Serviços', sugestao: 'Sugestões',
+  equipe: 'Equipe', login: 'Login',
 }
 
 export const adminBarbearias: AdminBarbearia[] = base.map((b, i) => ({

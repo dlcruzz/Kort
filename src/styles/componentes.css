@@ -774,3 +774,38 @@
     padding-right: 12px;
   }
 }
+
+.aviso-erro .ico {
+  background: var(--perigo);
+  color: var(--papel);
+}
+.aviso-erro {
+  max-width: min(440px, calc(100vw - 32px));
+}
+
+.tela-carregando {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background: var(--concreto);
+  color: var(--grafite);
+}
+.tela-carregando img {
+  width: 64px;
+  animation: pulsar-logo 1.2s ease-in-out infinite;
+}
+.tela-carregando strong {
+  font-family: var(--f-display);
+  font-size: 28px;
+  color: var(--preto);
+}
+@keyframes pulsar-logo {
+  50% { opacity: 0.45; transform: translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tela-carregando img { animation: none; }
+}

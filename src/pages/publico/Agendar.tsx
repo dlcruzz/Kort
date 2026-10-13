@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, MapPin, Star, Clock3, Instagram, CalendarPlus } from 'lucide-react'
-import { useKort, useMapas } from '../../lib/store'
+import { usePaginaPublica } from '../../lib/publico'
 import { horariosLivres, type Slot } from '../../lib/agenda'
 import {
   dataLonga, dinheiroCurto, hhmmParaMin, hoje, isoDia, mascaraTelefone, nomeDiaCurto, plural, somaDias, telefoneE164,
@@ -10,14 +10,36 @@ import {
 import { Avatar, Campo } from '../../components/ui'
 import { atraso, TextoContado } from '../../lib/movimento'
 import type { Agendamento } from '../../lib/types'
+import { TelaCarregando } from '../../components/guardas'
 
 type Passo = 1 | 2 | 3 | 4 | 5
 const QUALQUER = 'qualquer'
 
 export default function Agendar() {
   const { slug } = useParams()
-  const { estado, acoes } = useKort()
-  const { membro: mapaMembro } = useMapas()
+  const pagina = usePaginaPublica(slug)
+  if (pagina.situacao === 'carregando') return <div className="pub"><TelaCarregando /></div>
+  if (pagina.situacao !== 'pronto' || !pagina.dados) return <NaoEncontrada erro={pagina.situacao === 'erro'} />
+  return <Pagina pagina={pagina as typeof pagina & { dados: NonNullable<typeof pagina.dados> }} />
+}
+
+function NaoEncontrada({ erro }: { erro?: boolean }) {
+  return (
+    <div className="pub">
+      <div className="pub-wrap" style={{ paddingTop: 80 }}>
+        <h1 className="display" style={{ fontSize: 48 }}>{erro ? 'Não deu para abrir' : 'Página não encontrada'}</h1>
+        <p style={{ color: 'var(--txt-2)', marginTop: 12 }}>
+          {erro ? 'Confira sua internet e tente de novo.' : 'Confira o link com a barbearia. O endereço é o site do Kort, /b/ e o nome dela.'}
+        </p>
+        <Link className="btn btn-primario" style={{ marginTop: 24 }} to="/b/esquina-77">Ver barbearia de exemplo</Link>
+      </div>
+    </div>
+  )
+}
+
+function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { dados: NonNullable<ReturnType<typeof usePaginaPublica>['dados']> } }) {
+  const estado = pagina.dados
+  const mapaMembro = useMemo(() => new Map(estado.membros.map((m) => [m.id, m])), [estado.membros])
   const b = estado.barbearia
 
   const [passo, setPasso] = useState<Passo>(1)
@@ -30,6 +52,9 @@ export default function Agendar() {
   const [obs, setObs] = useState('')
   const [erros, setErros] = useState<{ nome?: string; tel?: string }>({})
   const [criado, setCriado] = useState<Agendamento | null>(null)
+  const [linkHorario, setLinkHorario] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState('')
   const [dir, setDir] = useState<'frente' | 'tras'>('frente')
 
   const servicosAtivos = estado.servicos.filter((s) => s.ativo).sort((a, c) => a.ordem - c.ordem)
@@ -60,18 +85,6 @@ export default function Agendar() {
 
   const diaFechado = (d: Date) => !estado.horarios.some((h) => h.dia_semana === d.getDay())
 
-  if (slug !== b.slug || !b.publicada) {
-    return (
-      <div className="pub">
-        <div className="pub-wrap" style={{ paddingTop: 80 }}>
-          <h1 className="display" style={{ fontSize: 48 }}>Página não encontrada</h1>
-          <p style={{ color: 'var(--txt-2)', marginTop: 12 }}>Confira o link com a barbearia. O endereço é kort.app/b/ seguido do nome dela.</p>
-          <Link className="btn btn-primario" style={{ marginTop: 24 }} to={`/b/${b.slug}`}>Ver barbearia de exemplo</Link>
-        </div>
-      </div>
-    )
-  }
-
   const notas = estado.avaliacoes
   const media = notas.length ? notas.reduce((t, a) => t + a.nota, 0) / notas.length : 0
   const horarioHoje = estado.horarios.find((h) => h.dia_semana === new Date().getDay())
@@ -88,11 +101,11 @@ export default function Agendar() {
       setPasso(barbeiros.length === 1 ? 3 : 2)
     } else if (passo === 2) setPasso(3)
     else if (passo === 3) setPasso(4)
-    else if (passo === 4) confirmar()
+    else if (passo === 4) void confirmar()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const confirmar = () => {
+  const confirmar = async () => {
     const e: typeof erros = {}
     if (nome.trim().length < 2) e.nome = 'Escreva seu nome para o barbeiro saber quem é.'
     if (tel.replace(/\D/g, '').length < 10) e.tel = 'Confira o número com DDD. É por ele que chega a confirmação.'
@@ -101,16 +114,29 @@ export default function Agendar() {
     const quem = membroId === QUALQUER ? (livres.find((l) => l.minuto === slot.minuto)?.membroId ?? barbeiros[0].id) : membroId
     const inicio = new Date(dia)
     inicio.setHours(0, slot.minuto, 0, 0)
-    const ag = acoes.criarAgendamento({
-      novoCliente: { nome: nome.trim(), telefone: telefoneE164(tel) },
-      membroId: quem,
-      inicio,
-      servicoIds,
-      origem: 'link',
-      observacao: obs.trim() || undefined,
-    })
-    setCriado(ag)
-    setPasso(5)
+    setEnviando(true)
+    setErroEnvio('')
+    try {
+      const r = await pagina.agendar({
+        nome: nome.trim(),
+        telefone: telefoneE164(tel),
+        membroId: quem,
+        inicio,
+        servicoIds,
+        observacao: obs.trim() || undefined,
+      })
+      setCriado(r.agendamento)
+      setLinkHorario(r.link)
+      setPasso(5)
+    } catch (err) {
+      setErroEnvio((err as Error).message)
+      if ((err as Error).message.includes('ocupado')) {
+        setSlot(null)
+        setPasso(3)
+      }
+    } finally {
+      setEnviando(false)
+    }
   }
 
   const podeAvancar =
@@ -197,11 +223,10 @@ export default function Agendar() {
               <div className="pub-avaliacoes">
                 <h3>Quem já cortou aqui</h3>
                 {notas.filter((a) => a.publica && a.comentario).slice(0, 3).map((a) => {
-                  const c = estado.clientes.find((x) => x.id === a.cliente_id)
                   return (
                     <blockquote key={a.id}>
                       {a.comentario}
-                      <cite>{c ? primeiroNome(c.nome) : 'Cliente'} com {mapaMembro.get(a.membro_id)?.nome_exibicao}</cite>
+                      <cite>{a.cliente_nome ? primeiroNome(a.cliente_nome) : 'Cliente'} com {mapaMembro.get(a.membro_id)?.nome_exibicao}</cite>
                     </blockquote>
                   )
                 })}
@@ -239,6 +264,7 @@ export default function Agendar() {
         {passo === 3 && (
           <section>
             <div className="pub-passo-tit"><span className="n">3</span><h2>Que dia e hora?</h2></div>
+            {erroEnvio && <p className="pub-erro" role="alert">{erroEnvio}</p>}
             <div className="dias-tira" role="group" aria-label="Dia">
               {dias.map((d) => (
                 <button
@@ -301,6 +327,7 @@ export default function Agendar() {
                 <textarea id="obs" className="textarea" value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Ex.: quero tirar bastante em cima" />
               </Campo>
             </div>
+            {erroEnvio && <p className="pub-erro" role="alert">{erroEnvio}</p>}
             <p style={{ color: 'var(--txt-2)', fontSize: 12.5, marginTop: 14 }}>
               Ao confirmar você aceita receber mensagens da {b.nome} sobre este horário. O pagamento é feito na barbearia.
             </p>
@@ -326,11 +353,11 @@ export default function Agendar() {
               </dl>
             </div>
             <p style={{ color: 'var(--txt-2)', fontSize: 14, marginTop: 18 }}>
-              Mandamos a confirmação no seu WhatsApp. Um dia antes chega um lembrete.
+              Guarde este link para mudar ou cancelar. Um dia antes a barbearia te manda um lembrete no WhatsApp.
             </p>
             <div className="pub-acoes-final">
               <a className="btn btn-sec" href={linkAgenda} target="_blank" rel="noreferrer"><CalendarPlus /> Pôr na agenda</a>
-              <Link className="btn btn-sec" to={`/b/${b.slug}/horario/${criado.id}`}>Mudar ou cancelar</Link>
+              <Link className="btn btn-sec" to={linkHorario}>Mudar ou cancelar</Link>
             </div>
             <button
               className="btn btn-fantasma btn-bloco"
@@ -362,8 +389,8 @@ export default function Agendar() {
                 {slot && passo >= 3 ? `, ${nomeDiaCurto(dia.getDay())} ${slot.hhmm}` : ''}
               </div>
             </div>
-            <button className="btn btn-primario btn-grande" disabled={!podeAvancar} onClick={avancar}>
-              {passo === 4 ? 'Confirmar horário' : 'Continuar'}
+            <button className="btn btn-primario btn-grande" disabled={!podeAvancar || enviando} onClick={avancar}>
+              {passo === 4 ? (enviando ? 'Marcando...' : 'Confirmar horário') : 'Continuar'}
             </button>
           </div>
         </div>

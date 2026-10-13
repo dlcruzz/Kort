@@ -4,8 +4,7 @@ import { ArrowLeft, CalendarPlus, MessageCircle, Phone, Pencil, Gift } from 'luc
 import { useKort, useMapas, totalComanda } from '../../lib/store'
 import {
   dataCompleta, dataCurta, dataRelativa, deIsoDia, diasEntre, dinheiro, dinheiroCurto, hoje, hora, LABEL_FORMA, mascaraTelefone,
-  telefone, telefoneE164, primeiroNome,
-} from '../../lib/format'
+  telefone, telefoneE164, primeiroNome, linkPublico } from '../../lib/format'
 import { CabecalhoPagina, Campo, Confirmar, Folha, Metricas, StatusTag, Switch, Vazio } from '../../components/ui'
 import { FolhaNovoHorario, whatsLink } from '../../components/folhas'
 import { useAvisar } from '../../components/avisos'
@@ -123,7 +122,7 @@ export default function ClienteDetalhe() {
                   {atraso > 0 && c.aceita_mensagens && (
                     <a className="btn btn-escuro btn-bloco" style={{ marginTop: 14 }} target="_blank" rel="noreferrer"
                       onClick={() => acoes.registrarMensagem(c.id, 'resgate', 'manual')}
-                      href={whatsLink(c.telefone, `Fala, ${primeiroNome(c.nome)}! Faz um tempo que você não aparece aqui na ${estado.barbearia.nome}. Bora dar um trato no visual essa semana? Agende aqui: kort.app/b/${estado.barbearia.slug}`)}>
+                      href={whatsLink(c.telefone, `Fala, ${primeiroNome(c.nome)}! Faz um tempo que você não aparece aqui na ${estado.barbearia.nome}. Bora dar um trato no visual essa semana? Agende aqui: ${linkPublico(estado.barbearia.slug)}`)}>
                       <MessageCircle /> Chamar de volta no WhatsApp
                     </a>
                   )}

@@ -1,10 +1,10 @@
 import { useAdmin } from '../../lib/adminStore'
-import { adminUso, MODULOS, NOME_MODULO } from '../../data/admin'
+import { MODULOS, NOME_MODULO } from '../../data/admin'
 import { CabecalhoPagina } from '../../components/ui'
 import { BarrasHorizontais } from '../../components/graficos'
 
 export default function AdminUso() {
-  const { barbearias } = useAdmin()
+  const { barbearias, uso: adminUso } = useAdmin()
   const ativas = barbearias.filter((b) => b.status_assinatura !== 'cancelada')
   const ninguem = MODULOS.filter((m) => ativas.filter((b) => b.uso_modulos[m] > 0).length <= 1)
 

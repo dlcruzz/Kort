@@ -432,3 +432,12 @@
   font-size: 12.5px;
   color: var(--txt-2);
 }
+
+.pub-erro {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #3a1610;
+  color: #ffd9cf;
+  font-size: 14px;
+}
