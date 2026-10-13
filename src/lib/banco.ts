@@ -100,6 +100,12 @@ export async function buscarAgendamento(sb: SupabaseClient, id: string) {
   return r ? mapAgendamento(r) : null
 }
 
+/** Horários criados ou mudados depois de `desde` (a checagem de 30 em 30 s). */
+export async function buscarAgendamentosAlterados(sb: SupabaseClient, barbeariaId: string, desde: string) {
+  const r = ok(await sb.from('agendamentos').select(SEL_AGENDAMENTO).eq('barbearia_id', barbeariaId).gte('atualizado_em', desde).limit(200))
+  return (r ?? []).map(mapAgendamento)
+}
+
 export async function buscarCliente(sb: SupabaseClient, id: string) {
   return ok(await sb.from('clientes').select('*').eq('id', id).maybeSingle())
 }

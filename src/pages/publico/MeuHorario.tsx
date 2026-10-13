@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Check } from 'lucide-react'
 import { useMeuHorario } from '../../lib/publico'
 import { TelaCarregando } from '../../components/guardas'
+import { IconeWhats } from '../../components/IconeWhats'
 import { horariosLivres, type Slot } from '../../lib/agenda'
 import { dataLonga, dinheiroCurto, hora, hoje, isoDia, nomeDiaCurto, somaDias } from '../../lib/format'
 import { Confirmar } from '../../components/ui'
@@ -159,6 +160,20 @@ function Tela({ h, slug }: { h: ReturnType<typeof useMeuHorario>; slug?: string 
               </button>
             </div>
           </section>
+        )}
+
+        {modo === 'ver' && (
+          <div className="pub-acoes-final" style={{ marginTop: 18 }}>
+            <Link className="btn btn-sec" to={`/b/${slug}`}>Marcar outro horário</Link>
+            {(b.whatsapp || b.telefone) && (
+              <a className="btn btn-sec" target="_blank" rel="noreferrer"
+                href={`https://wa.me/${(b.whatsapp ?? b.telefone ?? '').replace(/\D/g, '')}?text=${encodeURIComponent(
+                  `Olá! Sobre meu horário de ${dataLonga(ag.inicio)} às ${hora(ag.inicio)} (${ag.servicos.map((x) => x.nome).join(' + ')}): ${window.location.href}`,
+                )}`}>
+                <IconeWhats /> Falar com a barbearia
+              </a>
+            )}
+          </div>
         )}
 
         <footer className="pub-rodape">

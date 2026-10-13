@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Check, MapPin, Star, Clock3, Instagram, CalendarPlus } from 'lucide-react'
+import { ArrowLeft, Check, MapPin, Star, Clock3, Instagram, CalendarPlus, Share2 } from 'lucide-react'
 import { usePaginaPublica } from '../../lib/publico'
 import { horariosLivres, type Slot } from '../../lib/agenda'
 import {
@@ -11,6 +11,7 @@ import { Avatar, Campo } from '../../components/ui'
 import { atraso, TextoContado } from '../../lib/movimento'
 import type { Agendamento } from '../../lib/types'
 import { TelaCarregando } from '../../components/guardas'
+import { IconeWhats } from '../../components/IconeWhats'
 
 type Passo = 1 | 2 | 3 | 4 | 5
 const QUALQUER = 'qualquer'
@@ -55,6 +56,7 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
   const [linkHorario, setLinkHorario] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erroEnvio, setErroEnvio] = useState('')
+  const [copiado, setCopiado] = useState(false)
   const [dir, setDir] = useState<'frente' | 'tras'>('frente')
 
   const servicosAtivos = estado.servicos.filter((s) => s.ativo).sort((a, c) => a.ordem - c.ordem)
@@ -153,6 +155,24 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
     { nome: 'Tarde', de: 12 * 60, ate: 18 * 60 },
     { nome: 'Noite', de: 18 * 60, ate: 24 * 60 },
   ]
+
+  // texto que o cliente manda para a barbearia: o "print" do horário
+  const textoComprovante = () => {
+    if (!criado) return ''
+    const ini = new Date(criado.inicio)
+    return [
+      `Olá! Acabei de marcar meu horário pelo link:`,
+      ``,
+      `*${criado.servicos.map((s) => s.nome).join(' + ')}*`,
+      `${dataLonga(ini)} às ${minParaHhmm(ini.getHours() * 60 + ini.getMinutes())}`,
+      `Com ${mapaMembro.get(criado.membro_id)?.nome_exibicao ?? 'a barbearia'}`,
+      `Valor: ${dinheiroCurto(criado.valor_previsto_centavos)} (pago na hora)`,
+      `Nome: ${nome.trim()}`,
+      ``,
+      `Para ver, mudar ou cancelar: ${window.location.origin}${linkHorario}`,
+      `Para marcar outro horário: ${window.location.origin}/b/${b.slug}`,
+    ].join('\n')
+  }
 
   const linkAgenda = criado
     ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${criado.servicos.map((s) => s.nome).join(' + ')} na ${b.nome}`)}&dates=${new Date(criado.inicio).toISOString().replace(/[-:]|\.\d{3}/g, '')}/${new Date(criado.fim).toISOString().replace(/[-:]|\.\d{3}/g, '')}&location=${encodeURIComponent(`${b.logradouro}, ${b.numero} - ${b.bairro}, ${b.cidade}`)}`
@@ -352,12 +372,21 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
                 <dd style={{ ['--i' as string]: 7 }}>{b.logradouro}, {b.numero}</dd>
               </dl>
             </div>
-            <p style={{ color: 'var(--txt-2)', fontSize: 14, marginTop: 18 }}>
-              Guarde este link para mudar ou cancelar. Um dia antes a barbearia te manda um lembrete no WhatsApp.
+            <a className="btn btn-primario btn-grande btn-bloco btn-whats" style={{ marginTop: 20 }} target="_blank" rel="noreferrer"
+              href={`https://wa.me/${(b.whatsapp ?? b.telefone ?? '').replace(/\D/g, '')}?text=${encodeURIComponent(textoComprovante())}`}>
+              <IconeWhats /> Mandar o comprovante para a barbearia
+            </a>
+            <p style={{ color: 'var(--txt-2)', fontSize: 13.5, marginTop: 10 }}>
+              Vai no WhatsApp com o horário e o link para mudar, cancelar ou marcar de novo. Assim o link fica salvo na conversa.
             </p>
             <div className="pub-acoes-final">
               <a className="btn btn-sec" href={linkAgenda} target="_blank" rel="noreferrer"><CalendarPlus /> Pôr na agenda</a>
               <Link className="btn btn-sec" to={linkHorario}>Mudar ou cancelar</Link>
+              <button className="btn btn-sec" onClick={async () => {
+                const url = `${window.location.origin}${linkHorario}`
+                if (navigator.share) await navigator.share({ title: `Meu horário na ${b.nome}`, text: textoComprovante(), url }).catch(() => {})
+                else { await navigator.clipboard?.writeText(url).catch(() => {}); setCopiado(true) }
+              }}><Share2 /> {copiado ? 'Link copiado' : 'Guardar o link'}</button>
             </div>
             <button
               className="btn btn-fantasma btn-bloco"

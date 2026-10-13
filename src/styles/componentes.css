@@ -890,3 +890,77 @@
   min-width: 0;
 }
 .input-link > .input:focus { box-shadow: none; outline: none; }
+
+/* aviso de horário novo pelo link */
+.aviso-novos {
+  position: fixed;
+  z-index: 70;
+  right: 20px;
+  bottom: 20px;
+  width: min(380px, calc(100vw - 24px));
+  background: var(--preto);
+  color: var(--papel);
+  border-radius: var(--r-folha);
+  box-shadow: 4px 4px 0 var(--kort);
+  padding: 14px 14px 12px;
+  animation: aviso-entra 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.aviso-novos-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.aviso-novos-cab strong { flex: 1; font-size: 15px; }
+.aviso-novos-cab .btn { color: var(--lamina); }
+.aviso-novos-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--kort);
+  color: var(--preto);
+  animation: aviso-pulso 1.4s ease-in-out 3;
+}
+.aviso-novos ul {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.aviso-novos li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--asfalto-2);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.aviso-novos .quando {
+  font-size: 12px;
+  color: var(--lamina);
+  text-align: center;
+  min-width: 64px;
+  text-transform: capitalize;
+}
+.aviso-novos .quando b {
+  display: block;
+  font-family: var(--f-display);
+  font-size: 22px;
+  color: var(--kort);
+}
+.aviso-novos .quem { font-weight: 700; }
+.aviso-novos .oque { font-size: 13px; color: var(--lamina); }
+.aviso-novos-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.aviso-novos-acoes .btn-fantasma { color: var(--lamina); }
+.aviso-novos-acoes .btn-sec { background: transparent; color: var(--papel); border-color: var(--sombra); }
+@keyframes aviso-entra { from { transform: translateY(30px); opacity: 0; } }
+@keyframes aviso-pulso { 50% { box-shadow: 0 0 0 8px rgba(231, 247, 56, 0.25); } }
+@media (max-width: 900px) {
+  .aviso-novos { right: 12px; bottom: calc(var(--abas-mobile) + 12px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aviso-novos, .aviso-novos-ico { animation: none; }
+}

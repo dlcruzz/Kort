@@ -17,7 +17,6 @@ export default function Caixa() {
     .filter((c) => c.status === 'paga' && c.pago_em && mesmoDia(new Date(c.pago_em), dia))
     .sort((a, b) => b.pago_em!.localeCompare(a.pago_em!))
   const total = pagas.reduce((t, c) => t + totalComanda(c), 0)
-  const produtos = pagas.reduce((t, c) => t + c.itens.filter((i) => i.tipo === 'produto').reduce((u, i) => u + i.quantidade * i.preco_unit_centavos, 0), 0)
 
   const porForma = Object.entries(
     pagas.reduce<Record<string, number>>((acc, c) => {
@@ -25,6 +24,14 @@ export default function Caixa() {
       return acc
     }, {}),
   ).sort((a, b) => b[1] - a[1])
+
+  // horários do dia: o que ainda vai entrar
+  const doDia = estado.agendamentos
+    .filter((a) => mesmoDia(new Date(a.inicio), dia) && a.status !== 'cancelado' && a.status !== 'faltou')
+    .sort((a, b) => a.inicio.localeCompare(b.inicio))
+  const aReceber = doDia.filter((a) => a.status === 'agendado' || a.status === 'confirmado' || a.status === 'em_atendimento')
+  const previstoAReceber = aReceber.reduce((t, a) => t + a.valor_previsto_centavos, 0)
+  const comandaDe = (agId: string) => estado.comandas.find((c) => c.agendamento_id === agId && c.status !== 'cancelada')
 
   const barbeiros = estado.membros.filter((m) => m.ativo && m.atende)
   const porBarbeiro = barbeiros.map((m) => {
@@ -46,16 +53,16 @@ export default function Caixa() {
 
       <div className="linha-flex" style={{ marginBottom: 16 }}>
         <button className="btn btn-sec btn-icone" aria-label="Dia anterior" onClick={() => setDia(somaDias(dia, -1))}><ChevronLeft size={18} /></button>
-        <button className="btn btn-sec btn-icone" aria-label="Próximo dia" onClick={() => setDia(somaDias(dia, 1))} disabled={mesmoDia(dia, hoje())}><ChevronRight size={18} /></button>
+        <button className="btn btn-sec btn-icone" aria-label="Próximo dia" onClick={() => setDia(somaDias(dia, 1))}><ChevronRight size={18} /></button>
         <strong style={{ fontSize: 16 }}>{dataLonga(dia)}</strong>
         {!mesmoDia(dia, hoje()) && <button className="btn btn-fantasma btn-pequeno" onClick={() => setDia(hoje())}>Hoje</button>}
       </div>
 
       <Metricas
         itens={[
-          { rot: 'Entrou', val: dinheiro(total), det: produtos ? `${dinheiroCurto(produtos)} em produtos` : 'Só serviços' },
-          { rot: 'Atendimentos', val: pagas.length },
-          { rot: 'Ticket médio', val: pagas.length ? dinheiro(Math.round(total / pagas.length)) : 'R$ 0' },
+          { rot: 'Previsto do dia', val: dinheiro(total + previstoAReceber), det: `${doDia.length} ${doDia.length === 1 ? 'horário marcado' : 'horários marcados'}` },
+          { rot: 'Já entrou', val: dinheiro(total), det: pagas.length ? `${pagas.length} pagos, ticket ${dinheiroCurto(Math.round(total / pagas.length))}` : 'Nenhum pagamento ainda' },
+          { rot: 'Falta receber', val: dinheiro(previstoAReceber), det: `${aReceber.length} ${aReceber.length === 1 ? 'horário' : 'horários'} pela frente` },
           { rot: 'Comandas abertas', val: abertas.length, det: abertas.length ? 'Aguardando pagamento' : 'Tudo fechado' },
         ]}
       />
@@ -85,6 +92,39 @@ export default function Caixa() {
               </div>
             </section>
           )}
+
+          <section className="painel">
+            <div className="painel-cab"><h2>Horários {dataRelativa(dia) === 'hoje' ? 'de hoje' : `de ${dataRelativa(dia)}`}</h2><span className="muted pequeno">{dinheiroCurto(previstoAReceber)} a receber</span></div>
+            {doDia.length ? (
+              <ul className="lista" style={{ padding: '6px 18px 4px' }}>
+                {doDia.map((a) => {
+                  const cl = cliente.get(a.cliente_id)
+                  const cmd = comandaDe(a.id)
+                  const pago = a.status === 'concluido' || cmd?.status === 'paga'
+                  return (
+                    <li key={a.id}>
+                      <span className="num" style={{ fontWeight: 700, minWidth: 48 }}>{hora(a.inicio)}</span>
+                      <span className="ponto" style={{ background: membro.get(a.membro_id)?.cor_agenda }} />
+                      <div className="cresce">
+                        <div style={{ fontWeight: 600 }}>{cl?.nome ?? 'Cliente'}{a.origem === 'link' && <span className="tag tag-kort" style={{ marginLeft: 6 }}>pelo link</span>}</div>
+                        <div className="muted pequeno trunca">{a.servicos.map((x) => x.nome).join(' + ')}, com {membro.get(a.membro_id)?.nome_exibicao}</div>
+                      </div>
+                      <span className="num" style={{ fontWeight: 700 }}>{dinheiroCurto(a.valor_previsto_centavos)}</span>
+                      {pago ? (
+                        <span className="tag tag-ok">Pago</span>
+                      ) : (
+                        <button className="btn btn-sec btn-pequeno" onClick={() => setAberta(cmd?.id ?? acoes.abrirComanda({ agendamentoId: a.id, membroId: a.membro_id }))}>
+                          {cmd ? 'Ver comanda' : 'Receber'}
+                        </button>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <Vazio titulo="Nenhum horário nesse dia" texto="Os horários marcados pelo link e no balcão aparecem aqui com o valor previsto." />
+            )}
+          </section>
 
           <section className="painel">
             <div className="painel-cab"><h2>Pagamentos {dataRelativa(dia) === 'hoje' ? 'de hoje' : `de ${dataRelativa(dia)}`}</h2></div>

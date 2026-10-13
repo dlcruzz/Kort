@@ -18,7 +18,7 @@ import type {
 import { isoDia, somaDias, somaMinutos, uid } from './format'
 import { supabase } from './supabase'
 import { useSessao } from './sessao'
-import { buscarAgendamento, buscarCliente, carregarEstado, mensagemDeErro, ok } from './banco'
+import { buscarAgendamento, buscarAgendamentosAlterados, buscarCliente, carregarEstado, mensagemDeErro, ok } from './banco'
 import { avisarGlobal } from '../components/avisos'
 
 const CHAVE = 'kort-demo'
@@ -802,6 +802,9 @@ interface Contexto {
   /** gravações ainda na fila */
   salvando: boolean
   recarregar(): Promise<void>
+  /** horários marcados pelo link que o barbeiro ainda não viu */
+  novos: Agendamento[]
+  marcarVistos(): void
 }
 
 type Situacao = { tipo: 'vazio' } | { tipo: 'carregando' } | { tipo: 'erro'; msg: string } | { tipo: 'pronto' }
@@ -913,6 +916,48 @@ export function KortProvider({ children }: { children: ReactNode }) {
 
   const acoes = useMemo(() => criarAcoes(mudar, () => ref.current!, banco), [mudar, banco])
 
+  // Quando o barbeiro viu os horários novos pela última vez (por barbearia)
+  const chaveVisto = `kort-visto-${barbeariaId ?? 'demo'}`
+  const [visto, setVisto] = useState(() => new Date().toISOString())
+  useEffect(() => {
+    let v: string | null = null
+    try { v = localStorage.getItem(chaveVisto) } catch { /* sem storage */ }
+    const agora = new Date().toISOString()
+    setVisto(v ?? agora)
+    if (!v) try { localStorage.setItem(chaveVisto, agora) } catch { /* sem storage */ }
+  }, [chaveVisto])
+  const marcarVistos = useCallback(() => {
+    const agora = new Date().toISOString()
+    setVisto(agora)
+    try { localStorage.setItem(chaveVisto, agora) } catch { /* sem storage */ }
+  }, [chaveVisto])
+  const novos = useMemo(
+    () => (estado?.agendamentos ?? []).filter((a) => a.origem === 'link' && a.criado_em > visto && a.status !== 'cancelado'),
+    [estado?.agendamentos, visto],
+  )
+
+  // Plano B do tempo real: a cada 30 s busca o que mudou na agenda
+  useEffect(() => {
+    if (!banco || situacao.tipo !== 'pronto') return
+    let desde = new Date(Date.now() - 60_000).toISOString()
+    const t = setInterval(async () => {
+      const agora = new Date(Date.now() - 5_000).toISOString()
+      const lista = await buscarAgendamentosAlterados(banco.sb, banco.barbeariaId, desde).catch(() => null)
+      if (!lista) return
+      desde = agora
+      if (!lista.length) return
+      mudar((s) => {
+        for (const a of lista) {
+          const i = s.agendamentos.findIndex((x) => x.id === a.id)
+          if (i >= 0) s.agendamentos[i] = a
+          else s.agendamentos.push(a)
+        }
+        s.agendamentos.sort((x, y) => x.inicio.localeCompare(y.inicio))
+      })
+    }, 30_000)
+    return () => clearInterval(t)
+  }, [banco, situacao.tipo, mudar])
+
   // horário novo pelo link aparece na agenda sem recarregar a página
   useEffect(() => {
     if (!banco || situacao.tipo !== 'pronto') return
@@ -923,7 +968,6 @@ export function KortProvider({ children }: { children: ReactNode }) {
         if (!id) return
         // espera os serviços do agendamento serem gravados
         setTimeout(() => banco.recarregarAgendamento(id), 800)
-        if (p.eventType === 'INSERT' && (p.new as { origem?: string }).origem === 'link') avisarGlobal('Horário novo marcado pelo link')
       })
       .subscribe()
     return () => {
@@ -961,8 +1005,10 @@ export function KortProvider({ children }: { children: ReactNode }) {
       salvando: pendentes > 0,
       recarregar,
       situacao,
+      novos,
+      marcarVistos,
     }),
-    [estado, acoes, sessao.modo, pendentes, recarregar, situacao],
+    [estado, acoes, sessao.modo, pendentes, recarregar, situacao, novos, marcarVistos],
   )
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>

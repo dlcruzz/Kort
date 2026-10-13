@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Lock, Check, Armchair, Clock } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 import { useKort, useMapas } from '../../lib/store'
 import { expediente, pausas, horariosLivres } from '../../lib/agenda'
 import { useMinuto, useTelaPequena } from '../../lib/hooks'
@@ -21,7 +22,17 @@ export default function Agenda() {
   const pequeno = useTelaPequena()
   const agora = useMinuto()
 
+  const local = useLocation()
   const [dia, setDia] = useState(hoje())
+  // "Ver na agenda" do aviso de horário novo abre no dia do horário
+  useEffect(() => {
+    const d = (local.state as { dia?: string } | null)?.dia
+    if (d) {
+      const x = new Date(d)
+      x.setHours(0, 0, 0, 0)
+      setDia(x)
+    }
+  }, [local.state])
   const [visao, setVisao] = useState<Visao>('dia')
   const [detalhe, setDetalhe] = useState<string | null>(null)
   const [comanda, setComanda] = useState<string | null>(null)

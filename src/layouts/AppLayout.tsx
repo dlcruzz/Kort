@@ -10,6 +10,7 @@ import { deIsoDia, hoje } from '../lib/format'
 import { RailIndicador } from '../components/RailIndicador'
 import { Avatar, Folha } from '../components/ui'
 import { LinkAgendamento } from '../components/LinkAgendamento'
+import { AvisoNovos } from '../components/AvisoNovos'
 
 type ItemMenu = { to: string; nome: string; icone: typeof CalendarDays; contador?: 'comandas' | 'espera' | 'estoque' }
 
@@ -155,6 +156,7 @@ export default function AppLayout() {
         ) : null}
 
         <LinkAgendamento />
+        <AvisoNovos />
 
         <main className={telaCheia ? 'main-cheia' : 'pagina'}>
           <div key={local.pathname} className={telaCheia ? 'main-cheia' : 'entrada-pagina'}>
