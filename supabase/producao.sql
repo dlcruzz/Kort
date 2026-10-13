@@ -324,7 +324,7 @@ begin
   insert into public.barbearias (slug, nome, bairro, cidade, modo_operacao, whatsapp, telefone, criado_por)
   values (v_slug, trim(p_nome), nullif(trim(p_bairro), ''), nullif(trim(p_cidade), ''), p_modo,
           nullif(p_whatsapp, ''), nullif(p_whatsapp, ''), v_uid)
-  returning id into v_bar;                -- trigger cria o dono e o teste de 7 dias
+  returning id into v_bar;                -- trigger cria o dono e o teste de 15 dias
 
   select id into v_membro from public.membros where barbearia_id = v_bar and perfil_id = v_uid;
   update public.membros set cor_agenda = '#E7F738' where id = v_membro;
@@ -488,7 +488,7 @@ begin
   values (v_bar, auth.uid(), 'conta.pagamento_informado', jsonb_build_object('fatura', p_fatura));
 end $$;
 
--- Teste grátis de 7 dias para quem se cadastra (substitui os 14 do schema.sql)
+-- Teste grátis de 15 dias para quem se cadastra (substitui os 14 do schema.sql)
 create or replace function privado.tg_nova_barbearia()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_plano uuid; v_nome text;
@@ -504,7 +504,7 @@ begin
   end if;
   if v_plano is not null then
     insert into public.assinaturas_saas (barbearia_id, plano_id, status, teste_ate)
-    values (new.id, v_plano, 'teste', current_date + 7);
+    values (new.id, v_plano, 'teste', current_date + 15);
   end if;
   return new;
 end $$;

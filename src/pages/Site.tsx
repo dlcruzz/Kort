@@ -88,7 +88,7 @@ export default function Site() {
               <Link className="btn btn-primario btn-grande" to="/criar-conta">Criar minha barbearia</Link>
               <Link className="btn btn-sec btn-grande" to="/entrar">Já tenho conta</Link>
             </div>
-            <p className="nota">7 dias grátis, sem cartão de crédito. Depois, Pix ou cartão, sem fidelidade.</p>
+            <p className="nota">15 dias grátis, sem cartão de crédito. Depois, Pix ou cartão, sem fidelidade.</p>
           </div>
 
           <div className="celular" aria-label="Exemplo da página de agendamento no celular" role="img">

@@ -106,8 +106,8 @@ Se mudar alguma variável, vá em **Deployments** e clique **Retry deployment**:
 
 ## Como funciona a mensalidade no dia a dia
 
-1. A barbearia ganha **7 dias de teste** com tudo liberado ao se cadastrar.
-2. No 8º dia sem pagamento, a conta é **suspensa na hora**: o app abre direto na tela de pagamento e a página de agendamento sai do ar.
+1. A barbearia ganha **15 dias de teste** com tudo liberado ao se cadastrar.
+2. No 16º dia sem pagamento, a conta é **suspensa na hora**: o app abre direto na tela de pagamento e a página de agendamento sai do ar.
 3. O barbeiro escolhe o plano e toca em **Pagar e liberar agora**. Abre o checkout do **Mercado Pago** (Pix com QR, cartão de crédito ou débito).
 4. O Mercado Pago avisa a função `mp-webhook`, que confere o pagamento e libera a conta sozinha em segundos. O próximo vencimento anda um mês.
 5. Depois, a fatura de cada mês aparece 5 dias antes do vencimento. Vencida: "pagamento atrasado". Vencida há 3 dias: suspensa até pagar.

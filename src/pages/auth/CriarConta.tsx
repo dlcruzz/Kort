@@ -75,7 +75,7 @@ export default function CriarConta() {
       <div className="auth-form">
         <form onSubmit={enviar} noValidate>
           <h1>Criar conta</h1>
-          <p className="muted" style={{ marginTop: -6 }}>7 dias com tudo liberado. Depois você escolhe o plano e paga pelo Pix ou cartão.</p>
+          <p className="muted" style={{ marginTop: -6 }}>15 dias com tudo liberado. Depois você escolhe o plano e paga pelo Pix ou cartão.</p>
           <Campo rotulo="Seu nome" id="nome" erro={erros.nome}>
             <input id="nome" className="input" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} autoComplete="name" />
           </Campo>
