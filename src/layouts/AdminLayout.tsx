@@ -22,7 +22,7 @@ export default function AdminLayout() {
   const sair = async () => {
     if (sessao.modo === 'demo') sessao.sairDemo()
     else await sessao.sair()
-    nav('/entrar')
+    nav('/admin/entrar')
   }
   return (
     <div className="app admin">

@@ -22,6 +22,7 @@ export default function Onboarding() {
     if (!sessao.pronto) return <TelaCarregando />
     if (!sessao.usuario) return <Navigate to="/criar-conta" replace />
     if (sessao.vinculo) return <Navigate to="/app/agenda" replace />
+    if (sessao.perfil?.super_admin) return <Navigate to="/admin" replace />
     if (conviteGuardado()) return <Navigate to="/convite" replace />
   }
   return <Passos />

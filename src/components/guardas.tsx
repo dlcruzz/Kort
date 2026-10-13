@@ -45,8 +45,7 @@ export function ExigeAdmin({ children }: { children: ReactNode }) {
   const sessao = useSessao()
   if (sessao.modo === 'demo') return <>{children}</>
   if (!sessao.pronto) return <TelaCarregando />
-  if (!sessao.usuario) return <Navigate to="/entrar" replace />
-  if (!sessao.perfil?.super_admin) return <Navigate to="/app" replace />
+  if (!sessao.usuario || !sessao.perfil?.super_admin) return <Navigate to="/admin/entrar" replace />
   return <>{children}</>
 }
 

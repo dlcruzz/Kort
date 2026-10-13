@@ -153,7 +153,7 @@ export default function Site() {
         <div className="site-rodape-in">
           <img src="/logo-sm.png" alt="Kort" />
           <span>Kort é um produto Zinkra. São Paulo, {new Date().getFullYear()}.</span>
-          <Link to="/admin" style={{ color: 'inherit' }}>Painel interno</Link>
+          <Link to="/admin/entrar" style={{ color: 'inherit' }}>Painel interno</Link>
         </div>
       </footer>
     </div>

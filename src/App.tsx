@@ -9,6 +9,7 @@ import CriarConta from './pages/auth/CriarConta'
 import Onboarding from './pages/auth/Onboarding'
 import NovaSenha from './pages/auth/NovaSenha'
 import Convite from './pages/auth/Convite'
+import AdminEntrar from './pages/auth/AdminEntrar'
 
 import Agendar from './pages/publico/Agendar'
 import MeuHorario from './pages/publico/MeuHorario'
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/demo" element={<EntrarDemo />} />
       <Route path="/nova-senha" element={<NovaSenha />} />
       <Route path="/convite" element={<Convite />} />
+      <Route path="/admin/entrar" element={<AdminEntrar />} />
 
       {/* página pública da barbearia: kort.app/b/<slug> */}
       <Route path="/b/:slug" element={<Agendar />} />
