@@ -114,9 +114,9 @@ function Passos() {
               </Campo>
               <Campo rotulo="Seu link" id="slug" erro={slugLivre === false ? 'Esse link já é de outra barbearia. Mude um pouco.' : undefined}
                 ajuda={slugLivre ? 'Link livre. Coloque na bio do Instagram e no status do WhatsApp.' : 'Coloque na bio do Instagram e no status do WhatsApp.'}>
-                <div className="input-prefixo">
-                  <span style={{ fontSize: 13 }}>{window.location.host}/b/</span>
-                  <input id="slug" className="input" style={{ paddingLeft: `${(window.location.host.length + 3) * 7.4 + 14}px` }} value={slug} onChange={(e) => setSlug(slugificar(e.target.value))} />
+                <div className="input-link">
+                  <span>{window.location.host}/b/</span>
+                  <input id="slug" className="input" value={slug} onChange={(e) => setSlug(slugificar(e.target.value))} />
                 </div>
               </Campo>
               <Campo rotulo="WhatsApp da barbearia" id="whats" ajuda="O cliente fala com você por esse número.">

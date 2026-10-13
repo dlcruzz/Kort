@@ -9,6 +9,7 @@ import { useSessao } from '../lib/sessao'
 import { deIsoDia, hoje } from '../lib/format'
 import { RailIndicador } from '../components/RailIndicador'
 import { Avatar, Folha } from '../components/ui'
+import { LinkAgendamento } from '../components/LinkAgendamento'
 
 type ItemMenu = { to: string; nome: string; icone: typeof CalendarDays; contador?: 'comandas' | 'espera' | 'estoque' }
 
@@ -152,6 +153,8 @@ export default function AppLayout() {
             <Link to="/app/configuracoes?aba=plano">Escolher plano</Link>
           </div>
         ) : null}
+
+        <LinkAgendamento />
 
         <main className={telaCheia ? 'main-cheia' : 'pagina'}>
           <div key={local.pathname} className={telaCheia ? 'main-cheia' : 'entrada-pagina'}>

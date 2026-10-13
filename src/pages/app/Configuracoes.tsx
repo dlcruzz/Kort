@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Copy, ThumbsUp, Plus, Smartphone } from 'lucide-react'
 import { useKort } from '../../lib/store'
-import { dataCompleta, dinheiro, nomeDia, nomeMes, deIsoDia, dominio } from '../../lib/format'
+import { dataCompleta, dinheiro, nomeDia, nomeMes, deIsoDia, dominio, linkPublico } from '../../lib/format'
 import { pixCopiaECola } from '../../lib/pix'
 import { CabecalhoPagina, Campo, Confirmar, Folha, Segmentos, Switch } from '../../components/ui'
 import { PixQr } from '../../components/PixQr'
@@ -58,7 +58,12 @@ function DadosBarbearia() {
           <Campo rotulo="Cidade" id="cf-cid"><input id="cf-cid" className="input" value={b.cidade ?? ''} onChange={(e) => set('cidade', e.target.value)} /></Campo>
           <Campo rotulo="WhatsApp da barbearia" id="cf-wa" ajuda="O cliente fala com você por esse número."><input id="cf-wa" className="input" inputMode="tel" value={b.whatsapp ?? ''} onChange={(e) => set('whatsapp', e.target.value.replace(/[^0-9+]/g, ''))} placeholder="+5511900000000" /></Campo>
           <Campo rotulo="Instagram" id="cf-ig"><input id="cf-ig" className="input" value={b.instagram ?? ''} onChange={(e) => set('instagram', e.target.value)} /></Campo>
-          <Campo rotulo="Link" id="cf-slug"><div className="input-prefixo"><span style={{ fontSize: 13 }}>{DOMINIO}/b/</span><input id="cf-slug" className="input" style={{ paddingLeft: 88 }} value={b.slug} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} /></div></Campo>
+          <Campo rotulo="Link de agendamento" id="cf-slug" className="largo" ajuda="Mudou o final? O link antigo para de funcionar.">
+            <div className="linha-flex" style={{ gap: 8, flexWrap: 'wrap' }}>
+              <div className="input-link cresce"><span>{DOMINIO}/b/</span><input id="cf-slug" className="input" value={b.slug} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} /></div>
+              <button type="button" className="btn btn-sec" onClick={async () => { await navigator.clipboard?.writeText(linkPublico(estado.barbearia.slug)).catch(() => {}); avisar('Link copiado') }}><Copy /> Copiar link</button>
+            </div>
+          </Campo>
           <div className="largo"><Switch checked={b.publicada} onChange={(v) => set('publicada', v)}>Página de agendamento no ar</Switch></div>
           <button className="btn btn-primario largo" style={{ justifySelf: 'start' }} onClick={() => { acoes.salvarBarbearia(b); avisar('Dados salvos') }}>Salvar</button>
         </div>
