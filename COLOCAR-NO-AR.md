@@ -106,11 +106,20 @@ Se mudar alguma variável, vá em **Deployments** e clique **Retry deployment**:
 
 ## Como funciona a mensalidade no dia a dia
 
-1. A barbearia ganha **14 dias de teste** no plano Barbearia ao se cadastrar.
-2. No fim do teste, a rotina das 06:00 cria a primeira fatura (vence em 3 dias). Depois, a fatura de cada mês aparece 5 dias antes do vencimento.
-3. O barbeiro abre **Configurações > Plano e mensalidade**, paga o Pix (QR ou copia e cola) e aperta **Já paguei**.
-4. Você confere no app do Nu e, no painel, **Mensalidades > Dar baixa**. A conta volta para "ativa" e o próximo vencimento anda um mês.
-5. Fatura vencida há 3 dias: a conta fica "pagamento atrasado" e o barbeiro vê o aviso no app. Há 15 dias: a página de agendamento sai do ar até a baixa.
+1. A barbearia ganha **7 dias de teste** com tudo liberado ao se cadastrar.
+2. No 8º dia sem pagamento, a conta é **suspensa na hora**: o app abre direto na tela de pagamento e a página de agendamento sai do ar.
+3. O barbeiro escolhe o plano e toca em **Pagar e liberar agora**. Abre o checkout do **Mercado Pago** (Pix com QR, cartão de crédito ou débito).
+4. O Mercado Pago avisa a função `mp-webhook`, que confere o pagamento e libera a conta sozinha em segundos. O próximo vencimento anda um mês.
+5. Depois, a fatura de cada mês aparece 5 dias antes do vencimento. Vencida: "pagamento atrasado". Vencida há 3 dias: suspensa até pagar.
+6. Ainda dá para dar baixa manual no painel (**Mensalidades > Dar baixa**) se alguém pagar por fora.
+
+### Ligar o Mercado Pago (uma vez só)
+
+1. Crie a conta em mercadopago.com.br (pode ser com o CNPJ) e entre em **Suas integrações > Criar aplicação** (tipo "Pagamentos online", produto Checkout Pro).
+2. Em **Credenciais de produção**, copie o **Access Token** (começa com `APP_USR-`).
+3. No Supabase: **Edge Functions > Secrets > Add new secret**: nome `MP_ACCESS_TOKEN`, valor = o token. Salve.
+4. Pronto. As funções `mp-checkout` (com verificação de JWT) e `mp-webhook` (sem verificação de JWT) já estão publicadas. O endereço de aviso vai em cada cobrança: `https://zlrdnwkihldhimlpneni.supabase.co/functions/v1/mp-webhook`.
+5. O dinheiro cai no saldo do Mercado Pago. Para mandar para o Nu Empresas: **Transferir > Pix** para a chave do CNPJ (grátis).
 
 O plano **Grátis** não gera fatura e aceita até 50 horários por mês.
 
