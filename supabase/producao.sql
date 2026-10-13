@@ -673,3 +673,155 @@ begin
 exception when others then
   raise notice 'pg_cron indisponível (%). Ative a extensão e rode este arquivo de novo.', sqlerrm;
 end $$;
+
+-- ---------------------------------------------------------------------
+-- 9. SUPORTE: chat da barbearia com o Kort (dúvida, problema, sugestão)
+--    Só leitura direta pelo RLS; tudo que grava passa pelas funções.
+-- ---------------------------------------------------------------------
+do $$ begin
+  create type public.tipo_suporte as enum ('duvida', 'problema', 'sugestao', 'outro');
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create type public.status_suporte as enum ('aberta', 'respondida', 'resolvida');
+exception when duplicate_object then null; end $$;
+
+create table if not exists public.suporte_conversas (
+  id             uuid primary key default gen_random_uuid(),
+  barbearia_id   uuid not null references public.barbearias(id) on delete cascade,
+  perfil_id      uuid references public.perfis(id) on delete set null,   -- quem abriu
+  tipo           public.tipo_suporte not null default 'duvida',
+  assunto        text not null,
+  status         public.status_suporte not null default 'aberta',
+  pagina         text,                                                    -- tela onde estava ao abrir
+  ultima_msg_em  timestamptz not null default now(),
+  criado_em      timestamptz not null default now()
+);
+
+create table if not exists public.suporte_mensagens (
+  id             uuid primary key default gen_random_uuid(),
+  conversa_id    uuid not null references public.suporte_conversas(id) on delete cascade,
+  barbearia_id   uuid not null references public.barbearias(id) on delete cascade,
+  autor_id       uuid references public.perfis(id) on delete set null,
+  do_kort        boolean not null default false,   -- true = resposta do suporte
+  automatica     boolean not null default false,
+  texto          text not null check (length(texto) between 1 and 4000),
+  lida_em        timestamptz,
+  criado_em      timestamptz not null default now()
+);
+
+create index if not exists suporte_conversas_barbearia on public.suporte_conversas (barbearia_id, ultima_msg_em desc);
+create index if not exists suporte_mensagens_conversa on public.suporte_mensagens (conversa_id, criado_em);
+
+alter table public.suporte_conversas enable row level security;
+alter table public.suporte_mensagens enable row level security;
+
+drop policy if exists suporte_conversas_ler on public.suporte_conversas;
+create policy suporte_conversas_ler on public.suporte_conversas for select
+  using (privado.eh_membro(barbearia_id) or privado.eh_super_admin());
+drop policy if exists suporte_mensagens_ler on public.suporte_mensagens;
+create policy suporte_mensagens_ler on public.suporte_mensagens for select
+  using (privado.eh_membro(barbearia_id) or privado.eh_super_admin());
+
+-- Lista com a última mensagem e o que falta ler de cada lado
+create or replace view public.suporte_resumo with (security_invoker = true) as
+select c.*, b.nome as barbearia_nome, b.slug as barbearia_slug,
+       pf.nome as aberta_por,
+       (select m.texto from public.suporte_mensagens m where m.conversa_id = c.id order by m.criado_em desc limit 1) as ultima_msg,
+       (select count(*) from public.suporte_mensagens m where m.conversa_id = c.id and m.do_kort and m.lida_em is null)::integer as nao_lidas_barbearia,
+       (select count(*) from public.suporte_mensagens m where m.conversa_id = c.id and not m.do_kort and m.lida_em is null)::integer as nao_lidas_kort
+from public.suporte_conversas c
+join public.barbearias b on b.id = c.barbearia_id
+left join public.perfis pf on pf.id = c.perfil_id;
+
+-- Barbearia abre um chamado (com a primeira mensagem e a resposta automática)
+create or replace function public.suporte_abrir(p_tipo public.tipo_suporte, p_assunto text, p_texto text, p_pagina text default null)
+returns uuid language plpgsql volatile security definer set search_path = '' as $$
+declare v_bar uuid; v_id uuid;
+begin
+  select barbearia_id into v_bar from public.membros where perfil_id = auth.uid() and ativo order by criado_em limit 1;
+  if v_bar is null then raise exception 'Entre na sua barbearia para falar com o suporte.' using errcode = 'P0001'; end if;
+  if length(trim(coalesce(p_texto, ''))) = 0 then raise exception 'Escreva a mensagem.' using errcode = 'P0001'; end if;
+  if (select count(*) from public.suporte_mensagens where autor_id = auth.uid() and criado_em > now() - interval '1 hour') >= 60 then
+    raise exception 'Muitas mensagens em pouco tempo. Espere um pouco.' using errcode = 'P0001';
+  end if;
+  insert into public.suporte_conversas (barbearia_id, perfil_id, tipo, assunto, pagina)
+  values (v_bar, auth.uid(), p_tipo, left(coalesce(nullif(trim(p_assunto), ''), left(trim(p_texto), 60)), 120), left(p_pagina, 200))
+  returning id into v_id;
+  insert into public.suporte_mensagens (conversa_id, barbearia_id, autor_id, texto)
+  values (v_id, v_bar, auth.uid(), left(trim(p_texto), 4000));
+  insert into public.suporte_mensagens (conversa_id, barbearia_id, do_kort, automatica, criado_em, texto)
+  values (v_id, v_bar, true, true, now() + interval '1 millisecond',
+    case p_tipo
+      when 'problema' then 'Recebemos o seu relato. Já está com a equipe do Kort e a resposta vem por aqui mesmo. Se puder, conte em qual tela aconteceu e o que você fez antes.'
+      when 'sugestao' then 'Valeu pela sugestão! Ela entrou na nossa lista e a resposta vem por aqui mesmo.'
+      else 'Recebemos sua mensagem. O suporte do Kort responde por aqui mesmo, e você é avisado quando chegar a resposta.'
+    end);
+  insert into public.eventos (barbearia_id, perfil_id, evento, metadados)
+  values (v_bar, auth.uid(), 'suporte.aberto', jsonb_build_object('tipo', p_tipo));
+  return v_id;
+end $$;
+
+-- Mensagem nova numa conversa (barbearia ou Kort)
+create or replace function public.suporte_enviar(p_conversa uuid, p_texto text)
+returns uuid language plpgsql volatile security definer set search_path = '' as $$
+declare c public.suporte_conversas%rowtype; v_admin boolean := privado.eh_super_admin(); v_id uuid;
+begin
+  select * into c from public.suporte_conversas where id = p_conversa;
+  if not found or not (v_admin or privado.eh_membro(c.barbearia_id)) then
+    raise exception 'Conversa não encontrada.' using errcode = 'P0001';
+  end if;
+  if length(trim(coalesce(p_texto, ''))) = 0 then raise exception 'Escreva a mensagem.' using errcode = 'P0001'; end if;
+  if not v_admin and (select count(*) from public.suporte_mensagens where autor_id = auth.uid() and criado_em > now() - interval '1 hour') >= 60 then
+    raise exception 'Muitas mensagens em pouco tempo. Espere um pouco.' using errcode = 'P0001';
+  end if;
+  insert into public.suporte_mensagens (conversa_id, barbearia_id, autor_id, do_kort, texto)
+  values (c.id, c.barbearia_id, auth.uid(), v_admin, left(trim(p_texto), 4000))
+  returning id into v_id;
+  update public.suporte_conversas
+  set ultima_msg_em = now(), status = (case when v_admin then 'respondida' else 'aberta' end)::public.status_suporte
+  where id = c.id;
+  return v_id;
+end $$;
+
+-- Marca como lidas as mensagens do outro lado
+create or replace function public.suporte_marcar_lidas(p_conversa uuid)
+returns void language plpgsql volatile security definer set search_path = '' as $$
+declare c public.suporte_conversas%rowtype; v_admin boolean := privado.eh_super_admin();
+begin
+  select * into c from public.suporte_conversas where id = p_conversa;
+  if not found then return; end if;
+  if v_admin then
+    update public.suporte_mensagens set lida_em = now() where conversa_id = c.id and not do_kort and lida_em is null;
+  elsif privado.eh_membro(c.barbearia_id) then
+    update public.suporte_mensagens set lida_em = now() where conversa_id = c.id and do_kort and lida_em is null;
+  end if;
+end $$;
+
+-- Resolver ou reabrir (os dois lados podem)
+create or replace function public.suporte_status(p_conversa uuid, p_status public.status_suporte)
+returns void language plpgsql volatile security definer set search_path = '' as $$
+declare c public.suporte_conversas%rowtype;
+begin
+  select * into c from public.suporte_conversas where id = p_conversa;
+  if not found or not (privado.eh_super_admin() or privado.eh_membro(c.barbearia_id)) then
+    raise exception 'Conversa não encontrada.' using errcode = 'P0001';
+  end if;
+  update public.suporte_conversas set status = p_status where id = c.id;
+end $$;
+
+revoke execute on function public.suporte_abrir(public.tipo_suporte, text, text, text), public.suporte_enviar(uuid, text),
+  public.suporte_marcar_lidas(uuid), public.suporte_status(uuid, public.status_suporte) from public;
+grant execute on function public.suporte_abrir(public.tipo_suporte, text, text, text), public.suporte_enviar(uuid, text),
+  public.suporte_marcar_lidas(uuid), public.suporte_status(uuid, public.status_suporte) to authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'suporte_mensagens') then
+      alter publication supabase_realtime add table public.suporte_mensagens;
+    end if;
+    if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'suporte_conversas') then
+      alter publication supabase_realtime add table public.suporte_conversas;
+    end if;
+  end if;
+end $$;

@@ -27,6 +27,7 @@ import Equipe from './pages/app/Equipe'
 import Estoque from './pages/app/Estoque'
 import Financeiro from './pages/app/Financeiro'
 import Configuracoes from './pages/app/Configuracoes'
+import Ajuda from './pages/app/Ajuda'
 
 import AdminVisao from './pages/admin/Visao'
 import AdminBarbearias from './pages/admin/Barbearias'
@@ -34,6 +35,7 @@ import AdminBarbeariaDetalhe from './pages/admin/BarbeariaDetalhe'
 import AdminUso from './pages/admin/Uso'
 import AdminFaturas from './pages/admin/Faturas'
 import AdminSugestoes from './pages/admin/Sugestoes'
+import AdminSuporte from './pages/admin/Suporte'
 
 export default function App() {
   return (
@@ -66,6 +68,7 @@ export default function App() {
         <Route path="estoque" element={<Estoque />} />
         <Route path="financeiro" element={<Financeiro />} />
         <Route path="configuracoes" element={<Configuracoes />} />
+        <Route path="ajuda" element={<Ajuda />} />
       </Route>
 
       <Route path="/admin" element={<ExigeAdmin><AdminLayout /></ExigeAdmin>}>
@@ -75,6 +78,7 @@ export default function App() {
         <Route path="uso" element={<AdminUso />} />
         <Route path="faturas" element={<AdminFaturas />} />
         <Route path="sugestoes" element={<AdminSugestoes />} />
+        <Route path="suporte" element={<AdminSuporte />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Gauge, Store, Activity, FileText, Lightbulb, LogOut } from 'lucide-react'
+import { Gauge, Store, Activity, FileText, Lightbulb, LogOut, LifeBuoy } from 'lucide-react'
+import { useNaoLidas } from '../lib/suporte'
+import { avisarGlobal } from '../components/avisos'
 import { RailIndicador } from '../components/RailIndicador'
 import { Avatar } from '../components/ui'
 import { useSessao } from '../lib/sessao'
@@ -10,6 +12,7 @@ const ITENS = [
   { to: '/admin/barbearias', nome: 'Barbearias', icone: Store },
   { to: '/admin/uso', nome: 'Uso das funções', icone: Activity },
   { to: '/admin/faturas', nome: 'Mensalidades', icone: FileText },
+  { to: '/admin/suporte', nome: 'Suporte', icone: LifeBuoy },
   { to: '/admin/sugestoes', nome: 'Sugestões', icone: Lightbulb },
 ]
 
@@ -18,6 +21,21 @@ export default function AdminLayout() {
   const sessao = useSessao()
   const nav = useNavigate()
   useCarregarAdmin()
+  const chamados = useNaoLidas('kort', () => {
+    avisarGlobal('Mensagem nova no suporte')
+    try {
+      const ctx = new AudioContext()
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.frequency.value = 990
+      o.connect(g)
+      g.connect(ctx.destination)
+      g.gain.setValueAtTime(0.2, ctx.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25)
+      o.start()
+      o.stop(ctx.currentTime + 0.26)
+    } catch { /* sem áudio */ }
+  })
   const nome = sessao.modo === 'demo' ? 'Danilo Cruz' : sessao.perfil?.nome || sessao.usuario?.email || 'Admin'
   const sair = async () => {
     if (sessao.modo === 'demo') sessao.sairDemo()
@@ -41,6 +59,7 @@ export default function AdminLayout() {
               <NavLink key={it.to} to={it.to} end={it.end} className="rail-item">
                 <Icone />
                 {it.nome}
+                {it.to === '/admin/suporte' && chamados > 0 && <span className="cont">{chamados}</span>}
               </NavLink>
             )
           })}

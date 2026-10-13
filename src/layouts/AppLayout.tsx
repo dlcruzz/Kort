@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   CalendarDays, Receipt, Users, BarChart3, MessageCircle, Megaphone, Award, Scissors, UserCog, Package, Wallet,
-  Settings, ExternalLink, MoreHorizontal, LogOut, Shield,
+  Settings, ExternalLink, MoreHorizontal, LogOut, Shield, LifeBuoy,
 } from 'lucide-react'
+import { useNaoLidas } from '../lib/suporte'
+import { avisarGlobal } from '../components/avisos'
 import { useKort } from '../lib/store'
 import { useSessao } from '../lib/sessao'
 import { deIsoDia, hoje } from '../lib/format'
@@ -53,6 +55,7 @@ export default function AppLayout() {
   const a = estado.assinatura
   const diasTeste = a.status === 'teste' && a.teste_ate ? Math.round((deIsoDia(a.teste_ate).getTime() - hoje().getTime()) / 86400000) : null
   const PAPEL = { dono: 'Dono', barbeiro: 'Barbeiro', recepcao: 'Recepção' }
+  const respostas = useNaoLidas('barbearia', () => avisarGlobal('O suporte do Kort respondeu. Veja em Ajuda.'))
 
   const sair = async () => {
     if (modo === 'demo') {
@@ -107,6 +110,11 @@ export default function AppLayout() {
         ))}
 
         <div className="rail-rodape">
+          <NavLink to="/app/ajuda" className="rail-item">
+            <LifeBuoy />
+            Ajuda
+            {respostas > 0 && <span className="cont">{respostas}</span>}
+          </NavLink>
           <NavLink to="/app/configuracoes" className="rail-item">
             <Settings />
             Configurações
@@ -178,7 +186,7 @@ export default function AppLayout() {
 
       <Folha aberta={mais} aoFechar={() => setMais(false)} titulo="Mais opções">
         <div className="menu-mais" onClick={() => setMais(false)}>
-          {[...GRUPOS.flatMap((g) => g.itens), { to: '/app/configuracoes', nome: 'Configurações', icone: Settings } as ItemMenu].map((it) => {
+          {[...GRUPOS.flatMap((g) => g.itens), { to: '/app/ajuda', nome: respostas ? `Ajuda (${respostas} nova${respostas > 1 ? 's' : ''})` : 'Ajuda', icone: LifeBuoy } as ItemMenu, { to: '/app/configuracoes', nome: 'Configurações', icone: Settings } as ItemMenu].map((it) => {
             const Icone = it.icone
             return (
               <NavLink key={it.to} to={it.to}>
