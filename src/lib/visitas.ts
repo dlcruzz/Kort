@@ -81,11 +81,12 @@ export function useRegistrarVisita(pagina: string) {
     if (!supabase || jaContadas.has(pagina)) return
     if (/^(localhost|127\.|192\.168\.)/.test(location.hostname)) return
     jaContadas.add(pagina)
-    void supabase.rpc('registrar_visita', {
+    // o cliente do Supabase só envia a chamada quando alguém espera a resposta
+    supabase.rpc('registrar_visita', {
       p_pagina: pagina,
       p_origem: origem(),
       p_visitante: visitante(),
       p_celular: window.matchMedia('(pointer: coarse)').matches,
-    })
+    }).then(() => undefined, () => undefined)
   }, [pagina])
 }
