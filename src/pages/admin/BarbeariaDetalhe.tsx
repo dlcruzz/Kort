@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, Handshake, MessageCircle } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Handshake, MessageCircle, Tag } from 'lucide-react'
 import { adminAcoes, useAdmin } from '../../lib/adminStore'
 import { MODULOS, NOME_MODULO } from '../../data/admin'
 import { dataCompleta, dinheiro, nomeMes, deIsoDia, telefone, tempoAtras } from '../../lib/format'
@@ -14,8 +14,27 @@ export default function AdminBarbeariaDetalhe() {
   const [acao, setAcao] = useState<null | 'suspender' | 'reativar' | 'encerrar'>(null)
   const [parceria, setParceria] = useState(false)
   const [obs, setObs] = useState('')
+  const [preco, setPreco] = useState(false)
+  const [precoTxt, setPrecoTxt] = useState('')
+  const [meses, setMeses] = useState(6)
+  const [precoObs, setPrecoObs] = useState('')
   const b = barbearias.find((x) => x.id === id)
   if (!b) return <Vazio titulo="Barbearia não encontrada" acao={<Link className="btn btn-sec" to="/admin/barbearias">Voltar</Link>} />
+
+  const combinado = b.preco_combinado_centavos ?? null
+  const combinadoVale = combinado !== null && (!b.preco_combinado_ate || b.preco_combinado_ate >= new Date().toISOString().slice(0, 7) + '-01')
+  const abrirPreco = () => {
+    setPrecoTxt(combinado !== null ? (combinado / 100).toFixed(2).replace('.', ',') : '')
+    setMeses(b.preco_combinado_ate ? Math.max(1, mesesAte(b.preco_combinado_ate)) : 6)
+    setPrecoObs(b.preco_combinado_obs ?? '')
+    setPreco(true)
+  }
+  const salvarPreco = () => {
+    const centavos = Math.round(Number(precoTxt.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) * 100)
+    if (!Number.isFinite(centavos) || centavos < 0) return
+    adminAcoes.definirPreco(b.id, centavos, meses, precoObs)
+    setPreco(false)
+  }
 
   const fats = faturas.filter((f) => f.barbearia_id === b.id)
   const risco = emRisco(b)
@@ -40,7 +59,9 @@ export default function AdminBarbeariaDetalhe() {
       <Metricas itens={[
         b.parceiro
           ? { rot: 'Plano', val: 'Parceira', det: 'Acesso vitalício, sem mensalidade' }
-          : { rot: 'Plano', val: b.plano, det: b.preco_centavos ? `${dinheiro(b.preco_centavos)} por mês` : 'Sem cobrança' },
+          : combinadoVale
+            ? { rot: 'Plano', val: dinheiro(combinado!), det: `Combinado${b.preco_combinado_ate ? ` até ${mesAno(b.preco_combinado_ate)}` : ' sem prazo'} · plano ${b.plano} é ${dinheiro(b.preco_centavos)}` }
+            : { rot: 'Plano', val: b.plano, det: b.preco_centavos ? `${dinheiro(b.preco_centavos)} por mês` : 'Sem cobrança' },
         { rot: 'Barbeiros', val: b.barbeiros },
         { rot: 'Clientes cadastrados', val: b.clientes },
         { rot: 'Agendamentos em 30 dias', val: b.agendamentos_30d, det: `Último uso ${tempoAtras(b.ultimo_uso)}` },
@@ -97,6 +118,31 @@ export default function AdminBarbeariaDetalhe() {
               </div>
             </div>
           </section>
+          {!b.parceiro && (
+            <section className="painel">
+              <div className="painel-cab">
+                <h2><Tag size={18} style={{ display: 'inline', verticalAlign: -3, marginRight: 6 }} />Preço combinado</h2>
+                {combinadoVale && <span className="tag tag-ok">{dinheiro(combinado!)}</span>}
+              </div>
+              <div className="painel-corpo coluna gap-8">
+                {combinadoVale ? (
+                  <>
+                    <p className="pequeno">Paga <b>{dinheiro(combinado!)}</b> por mês{b.preco_combinado_ate ? <> até <b>{mesAno(b.preco_combinado_ate)}</b>, e depois volta sozinho para {dinheiro(b.preco_centavos)} do plano {b.plano}</> : <>, sem prazo, no lugar dos {dinheiro(b.preco_centavos)} do plano {b.plano}</>}.</p>
+                    {b.preco_combinado_obs && <p className="pequeno muted">{b.preco_combinado_obs}</p>}
+                    <div className="linha-flex" style={{ gap: 6, flexWrap: 'wrap' }}>
+                      <button className="btn btn-sec btn-pequeno" onClick={abrirPreco}>Mudar valor</button>
+                      <button className="btn btn-fantasma btn-pequeno" onClick={() => adminAcoes.definirPreco(b.id, null, null, '')}>Voltar ao preço do plano</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="pequeno muted">Fechou um valor diferente na conversa? Ponha aqui e por quanto tempo. As faturas saem com esse valor e, no fim do prazo, voltam sozinhas para o preço do plano.</p>
+                    <div><button className="btn btn-primario btn-pequeno" onClick={abrirPreco}><Tag size={15} /> Definir preço combinado</button></div>
+                  </>
+                )}
+              </div>
+            </section>
+          )}
           <section className="painel parceria" data-ativa={b.parceiro ? 'sim' : 'nao'}>
             <div className="painel-cab"><h2><Handshake size={18} style={{ display: 'inline', verticalAlign: -3, marginRight: 6 }} />Parceria</h2>{b.parceiro && <span className="tag tag-kort">Ativa</span>}</div>
             <div className="painel-corpo coluna gap-8">
@@ -152,6 +198,52 @@ export default function AdminBarbeariaDetalhe() {
           <textarea id="parc-obs" className="textarea" rows={4} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Quem é e o que vai divulgar" />
         </Campo>
       </Folha>
+
+      <Folha aberta={preco} aoFechar={() => setPreco(false)} titulo="Preço combinado"
+        subtitulo={`No lugar dos ${dinheiro(b.preco_centavos)} do plano ${b.plano}. Vale a partir da fatura deste mês.`}
+        rodape={<>
+          <button className="btn btn-sec" onClick={() => setPreco(false)}>Cancelar</button>
+          <button className="btn btn-primario" disabled={!precoTxt.trim()} onClick={salvarPreco}><Tag size={16} /> Salvar preço</button>
+        </>}>
+        <div className="coluna gap-16">
+          <Campo rotulo="Quanto ele vai pagar por mês" id="pc-valor">
+            <div className="input-prefixo"><span>R$</span>
+              <input id="pc-valor" className="input" inputMode="decimal" value={precoTxt}
+                onChange={(e) => setPrecoTxt(e.target.value)} placeholder="Ex.: 40,00" autoFocus />
+            </div>
+          </Campo>
+          <Campo rotulo="Por quanto tempo" id="pc-meses" ajuda={meses ? `Vale para ${meses} ${meses === 1 ? 'fatura' : 'faturas'}: deste mês até ${mesAno(ateDeMeses(meses))}. Depois volta para ${dinheiro(b.preco_centavos)}.` : 'Vale até você tirar na mão.'}>
+            <select id="pc-meses" className="select" value={meses} onChange={(e) => setMeses(Number(e.target.value))}>
+              {[1, 2, 3, 6, 12].map((n) => <option key={n} value={n}>{n} {n === 1 ? 'mês' : 'meses'}</option>)}
+              <option value={0}>Sem prazo</option>
+            </select>
+          </Campo>
+          <Campo rotulo="O combinado (só você vê)" id="pc-obs" ajuda="Ex.: fechei por 6 meses para ele trazer as outras duas unidades.">
+            <textarea id="pc-obs" className="textarea" rows={3} value={precoObs} onChange={(e) => setPrecoObs(e.target.value)} placeholder="O que ficou combinado" />
+          </Campo>
+        </div>
+      </Folha>
     </>
   )
+}
+
+/** "março de 2027" a partir de uma data ISO */
+function mesAno(iso: string) {
+  const d = deIsoDia(iso)
+  return `${nomeMes(d.getMonth())} de ${d.getFullYear()}`
+}
+
+/** último mês coberto por N meses a partir deste: 6 meses em out/2026 vai até mar/2027 */
+function ateDeMeses(meses: number) {
+  const d = new Date()
+  d.setDate(1)
+  d.setMonth(d.getMonth() + meses - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+/** quantos meses faltam (contando este) até a data guardada */
+function mesesAte(ate: string) {
+  const fim = deIsoDia(ate)
+  const hoje = new Date()
+  return (fim.getFullYear() - hoje.getFullYear()) * 12 + (fim.getMonth() - hoje.getMonth()) + 1
 }

@@ -213,6 +213,28 @@ export const adminAcoes = {
     }), { acao: parceiro ? 'Virou parceira (acesso vitalício)' : 'Parceria encerrada', barbearia: b?.nome ?? '' })
     if (estado.modo === 'real') void rpc('admin_definir_parceiro', { p_barbearia: id, p_parceiro: parceiro, p_obs: obs.trim() || null })
   },
+  /** valor negociado no lugar do preço do plano. centavos null tira o combinado; meses 0/null = sem prazo */
+  definirPreco(id: string, centavos: number | null, meses: number | null, obs: string) {
+    const b = estado.barbearias.find((x) => x.id === id)
+    const ate = centavos === null || !meses ? null
+      : (() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + meses - 1); return d.toISOString().slice(0, 10) })()
+    mudar((s) => ({
+      ...s,
+      barbearias: s.barbearias.map((x) => (x.id !== id ? x : {
+        ...x,
+        preco_combinado_centavos: centavos,
+        preco_combinado_ate: ate,
+        preco_combinado_obs: obs.trim() || null,
+      })),
+      faturas: centavos === null ? s.faturas : s.faturas.map((f) => (
+        f.barbearia_id === id && (f.status === 'aberta' || f.status === 'vencida') ? { ...f, valor_centavos: centavos } : f)),
+    }), {
+      acao: centavos === null ? 'Preço combinado removido'
+        : `Preço combinado: ${(centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}${meses ? ` por ${meses} ${meses === 1 ? 'mês' : 'meses'}` : ' sem prazo'}`,
+      barbearia: b?.nome ?? '',
+    })
+    if (estado.modo === 'real') void rpc('admin_definir_preco', { p_barbearia: id, p_centavos: centavos, p_meses: meses || null, p_obs: obs.trim() || null })
+  },
   mudarSugestao(id: string, status: StatusSugestao) {
     mudar((s) => ({ ...s, sugestoes: s.sugestoes.map((x) => (x.id === id ? { ...x, status } : x)) }))
     if (estado.modo === 'real' && supabase) {

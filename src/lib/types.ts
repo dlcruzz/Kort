@@ -347,6 +347,11 @@ export interface AdminBarbearia {
   parceiro?: boolean
   parceiro_desde?: string | null
   parceiro_obs?: string | null
+  /** valor negociado no lugar do preço do plano; null = cobra o plano */
+  preco_combinado_centavos?: Centavos | null
+  /** último mês em que o valor negociado vale; null = sem prazo */
+  preco_combinado_ate?: string | null
+  preco_combinado_obs?: string | null
   barbeiros: number
   clientes: number
   agendamentos_30d: number
