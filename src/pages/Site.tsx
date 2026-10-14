@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { TextoContado, useRevelar } from '../lib/movimento'
 import { dinheiroCurto, dominio } from '../lib/format'
+import { useRegistrarVisita } from '../lib/visitas'
 
 // Mesmos preços da tabela planos (supabase/producao.sql).
 export const PLANOS = [
@@ -57,6 +58,7 @@ const DIA = [
 ]
 
 export default function Site() {
+  useRegistrarVisita('/')
   return (
     <div className="site">
       <header className="site-topo">
@@ -152,7 +154,7 @@ export default function Site() {
       <footer className="site-rodape">
         <div className="site-rodape-in">
           <img src="/logo-sm.png" alt="Kort" />
-          <span>Kort é um produto Zinkra. São Paulo, {new Date().getFullYear()}.</span>
+          <span>Kort é um produto Zinkra. São Paulo, {new Date().getFullYear()}. <Link to="/privacidade">Privacidade e cookies</Link></span>
         </div>
       </footer>
     </div>

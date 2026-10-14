@@ -4,6 +4,8 @@ import AdminLayout from './layouts/AdminLayout'
 import { EntrarDemo, ExigeAdmin, ExigeBarbearia } from './components/guardas'
 
 import Site from './pages/Site'
+import Privacidade from './pages/Privacidade'
+import { AvisoCookies } from './components/AvisoCookies'
 import Entrar from './pages/auth/Entrar'
 import CriarConta from './pages/auth/CriarConta'
 import Onboarding from './pages/auth/Onboarding'
@@ -39,8 +41,10 @@ import AdminSuporte from './pages/admin/Suporte'
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<Site />} />
+      <Route path="/privacidade" element={<Privacidade />} />
       <Route path="/entrar" element={<Entrar />} />
       <Route path="/criar-conta" element={<CriarConta />} />
       <Route path="/comecar" element={<Onboarding />} />
@@ -83,5 +87,7 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    <AvisoCookies />
+    </>
   )
 }

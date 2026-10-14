@@ -5,10 +5,12 @@ import { mascaraTelefone, telefoneE164 } from '../../lib/format'
 import { supabase, supabaseConfigurado } from '../../lib/supabase'
 import { useSessao } from '../../lib/sessao'
 import { LadoAuth, erroAuth } from './Entrar'
+import { useRegistrarVisita } from '../../lib/visitas'
 
 // O trigger tg_novo_usuario cria a linha em "perfis" com nome e telefone.
 
 export default function CriarConta() {
+  useRegistrarVisita('/criar-conta')
   const nav = useNavigate()
   const sessao = useSessao()
   const [f, setF] = useState({ nome: '', telefone: '', email: '', senha: '' })

@@ -150,7 +150,7 @@ export async function carregarEstado(sb: SupabaseClient, barbeariaId: string, pe
     sb.from('faturas').select('*').eq('barbearia_id', barbeariaId).order('competencia').then(ok),
     sb.from('sugestoes').select('*').order('criado_em', { ascending: false }).limit(200).then(ok),
     sb.from('sugestao_votos').select('sugestao_id, perfil_id').then(ok),
-    sb.from('assinaturas_saas').select('status, teste_ate, proximo_vencimento, dia_vencimento, planos(slug, nome, preco_centavos)').eq('barbearia_id', barbeariaId).maybeSingle().then(ok),
+    sb.from('assinaturas_saas').select('*, planos(slug, nome, preco_centavos)').eq('barbearia_id', barbeariaId).maybeSingle().then(ok),
   ])
 
   const membrosDoServico = new Map<string, string[]>()
@@ -247,6 +247,7 @@ export async function carregarEstado(sb: SupabaseClient, barbeariaId: string, pe
       status: (assinatura?.status ?? 'teste') as StatusAssinSaas,
       teste_ate: assinatura?.teste_ate ?? null,
       proximo_vencimento: assinatura?.proximo_vencimento ?? null,
+      parceiro: !!assinatura?.parceiro,
     },
     usuarioMembroId: eu?.id ?? membros?.[0]?.id ?? '',
     usuarioPapel: eu?.papel ?? 'barbeiro',

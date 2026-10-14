@@ -15,6 +15,32 @@ import { useSessao } from './sessao'
 
 interface Log { id: number; acao: string; barbearia: string; barbearia_id?: string | null; em: string }
 
+export interface ResumoVisitas {
+  por_dia: { dia: string; visitas: number; pessoas: number }[]
+  paginas: { pagina: string; visitas: number }[]
+  origens: { origem: string; visitas: number }[]
+  celular: number
+  cadastros: number
+}
+
+/** exemplo para a demonstração: 30 dias com mais visitas no fim de semana */
+function visitasDemo(): ResumoVisitas {
+  const h = new Date()
+  const por_dia = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(h.getFullYear(), h.getMonth(), h.getDate() - 29 + i)
+    const base = 18 + Math.round(i * 1.6) + (d.getDay() === 6 || d.getDay() === 0 ? 14 : 0) + ((i * 7) % 9)
+    return { dia: d.toISOString().slice(0, 10), visitas: base, pessoas: Math.round(base * 0.74) }
+  })
+  const total = por_dia.reduce((t, d) => t + d.visitas, 0)
+  return {
+    por_dia,
+    paginas: [{ pagina: '/', visitas: Math.round(total * 0.72) }, { pagina: '/criar-conta', visitas: Math.round(total * 0.18) }, { pagina: '/entrar', visitas: Math.round(total * 0.1) }],
+    origens: [{ origem: 'instagram.com', visitas: Math.round(total * 0.46) }, { origem: 'direto', visitas: Math.round(total * 0.31) }, { origem: 'google.com', visitas: Math.round(total * 0.15) }, { origem: 'whatsapp', visitas: Math.round(total * 0.08) }],
+    celular: Math.round(total * 0.83),
+    cadastros: 9,
+  }
+}
+
 interface EstadoAdmin {
   modo: 'demo' | 'real'
   carregando: boolean
@@ -24,6 +50,8 @@ interface EstadoAdmin {
   uso: AdminUsoFuncionalidade[]
   mrrHistorico: { mes: number; valor: number }[]
   logs: Log[]
+  /** null = ainda não carregou ou o banco ainda não tem a tabela de visitas */
+  visitas: ResumoVisitas | null
 }
 
 const DEMO: EstadoAdmin = {
@@ -35,9 +63,10 @@ const DEMO: EstadoAdmin = {
   uso: adminUso,
   mrrHistorico: adminMrrHistorico,
   logs: [],
+  visitas: visitasDemo(),
 }
 
-const VAZIO: EstadoAdmin = { modo: 'real', carregando: true, barbearias: [], faturas: [], sugestoes: [], uso: [], mrrHistorico: [-5, -4, -3, -2, -1, 0].map((mes) => ({ mes, valor: 0 })), logs: [] }
+const VAZIO: EstadoAdmin = { modo: 'real', carregando: true, barbearias: [], faturas: [], sugestoes: [], uso: [], mrrHistorico: [-5, -4, -3, -2, -1, 0].map((mes) => ({ mes, valor: 0 })), logs: [], visitas: null }
 
 // Com o banco ligado o painel nunca mostra dados de exemplo
 let estado: EstadoAdmin = supabase ? VAZIO : DEMO
@@ -80,6 +109,8 @@ export async function carregarAdmin() {
   mudar((s) => ({ ...s, modo: 'real', carregando: true }))
   try {
     const desde = new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1).toISOString().slice(0, 10)
+    // visitas vêm à parte: se o banco ainda não tem a tabela, o resto do painel carrega igual
+    const visitas = sb.rpc('admin_visitas_resumo', { p_dias: 30 }).then(({ data, error }) => (error ? null : (data as ResumoVisitas)))
     const [bars, fats, sugs, votos, uso, logs] = await Promise.all([
       sb.from('admin_barbearias').select('*').order('criado_em', { ascending: false }).then(ok),
       sb.from('faturas').select('*, barbearias(nome)').gte('competencia', desde).order('vencimento', { ascending: false }).then(ok),
@@ -105,6 +136,9 @@ export async function carregarAdmin() {
     const NOMES_ACAO: Record<string, string> = {
       baixa_fatura: 'Baixa de mensalidade', mudar_status: 'Status alterado', estender_teste: 'Teste estendido', trocar_plano: 'Plano trocado',
     }
+    const nomeAcao = (l: L) => l.acao === 'parceiro'
+      ? (l.detalhes?.parceiro ? 'Virou parceira (acesso vitalício)' : 'Parceria encerrada')
+      : `${NOMES_ACAO[l.acao] ?? l.acao}${l.detalhes?.status ? ` para ${l.detalhes.status}` : ''}${l.detalhes?.dias ? ` em ${l.detalhes.dias} dias` : ''}`
 
     estado = {
       modo: 'real',
@@ -121,9 +155,10 @@ export async function carregarAdmin() {
       mrrHistorico,
       logs: (logs ?? []).map((l: L) => ({
         id: l.id,
-        acao: `${NOMES_ACAO[l.acao] ?? l.acao}${l.detalhes?.status ? ` para ${l.detalhes.status}` : ''}${l.detalhes?.dias ? ` em ${l.detalhes.dias} dias` : ''}`,
+        acao: nomeAcao(l),
         barbearia: l.barbearias?.nome ?? '', barbearia_id: l.barbearia_id, em: l.criado_em,
       })),
+      visitas: await visitas,
     }
     emitir()
   } catch (e) {
@@ -166,6 +201,17 @@ export const adminAcoes = {
       }),
     }), { acao: `Teste estendido em ${dias} dias`, barbearia: b?.nome ?? '' })
     if (estado.modo === 'real') void rpc('admin_estender_teste', { p_barbearia: id, p_dias: dias })
+  },
+  definirParceiro(id: string, parceiro: boolean, obs: string) {
+    const b = estado.barbearias.find((x) => x.id === id)
+    mudar((s) => ({
+      ...s,
+      barbearias: s.barbearias.map((x) => (x.id !== id ? x : parceiro
+        ? { ...x, parceiro: true, parceiro_obs: obs.trim() || null, parceiro_desde: x.parceiro_desde ?? new Date().toISOString(), status_assinatura: 'ativa', proximo_vencimento: null }
+        : { ...x, parceiro: false, parceiro_obs: null, parceiro_desde: null })),
+      faturas: parceiro ? s.faturas.map((f) => (f.barbearia_id === id && (f.status === 'aberta' || f.status === 'vencida') ? { ...f, status: 'cancelada' } : f)) : s.faturas,
+    }), { acao: parceiro ? 'Virou parceira (acesso vitalício)' : 'Parceria encerrada', barbearia: b?.nome ?? '' })
+    if (estado.modo === 'real') void rpc('admin_definir_parceiro', { p_barbearia: id, p_parceiro: parceiro, p_obs: obs.trim() || null })
   },
   mudarSugestao(id: string, status: StatusSugestao) {
     mudar((s) => ({ ...s, sugestoes: s.sugestoes.map((x) => (x.id === id ? { ...x, status } : x)) }))

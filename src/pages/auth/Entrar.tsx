@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Campo } from '../../components/ui'
 import { supabase, supabaseConfigurado } from '../../lib/supabase'
 import { useSessao } from '../../lib/sessao'
+import { useRegistrarVisita } from '../../lib/visitas'
 
 export function LadoAuth() {
   return (
@@ -30,6 +31,7 @@ export function erroAuth(msg: string) {
 }
 
 export default function Entrar() {
+  useRegistrarVisita('/entrar')
   const nav = useNavigate()
   const local = useLocation()
   const sessao = useSessao()

@@ -1,3 +1,4 @@
+import { Handshake } from 'lucide-react'
 import type { StatusAssinSaas } from '../../lib/types'
 
 export const NOME_STATUS: Record<StatusAssinSaas, string> = {
@@ -8,7 +9,10 @@ export const NOME_STATUS: Record<StatusAssinSaas, string> = {
   cancelada: 'Cancelada',
 }
 
-export function StatusAssinatura({ status }: { status: StatusAssinSaas }) {
+export function StatusAssinatura({ status, parceiro }: { status: StatusAssinSaas; parceiro?: boolean }) {
+  if (parceiro && status !== 'suspensa' && status !== 'cancelada') {
+    return <span className="tag tag-kort" title="Acesso vitalício em troca de divulgação"><Handshake size={13} style={{ display: 'inline', verticalAlign: -2 }} /> Parceira</span>
+  }
   const cls = status === 'ativa' ? 'tag-ok' : status === 'teste' ? 'tag-info' : status === 'inadimplente' ? 'tag-perigo' : ''
   return <span className={`tag ${cls}`}>{NOME_STATUS[status]}</span>
 }

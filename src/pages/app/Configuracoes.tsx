@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Copy, ThumbsUp, Plus, Smartphone } from 'lucide-react'
+import { Copy, Handshake, ThumbsUp, Plus, Smartphone } from 'lucide-react'
 import { useKort } from '../../lib/store'
 import { dataCompleta, dinheiro, nomeDia, nomeMes, deIsoDia, dominio, linkPublico } from '../../lib/format'
 import { pixCopiaECola } from '../../lib/pix'
@@ -22,6 +22,7 @@ const DOMINIO = dominio()
 export default function Configuracoes() {
   const [params] = useSearchParams()
   const [aba, setAba] = useState<Aba>(() => (params.get('aba') as Aba) || 'barbearia')
+  const { estado } = useKort()
   return (
     <>
       <CabecalhoPagina titulo="Configurações" />
@@ -35,7 +36,7 @@ export default function Configuracoes() {
       {aba === 'barbearia' && <DadosBarbearia />}
       {aba === 'horarios' && <Horarios />}
       {aba === 'whatsapp' && <WhatsApp />}
-      {aba === 'plano' && <Plano />}
+      {aba === 'plano' && (estado.assinatura.parceiro ? <PlanoParceiro /> : <Plano />)}
       {aba === 'sugestoes' && <Sugestoes />}
     </>
   )
@@ -384,6 +385,24 @@ function Sugestoes() {
           <Campo rotulo="Conta mais (opcional)" id="sg-d"><textarea id="sg-d" className="textarea" value={t.descricao} onChange={(e) => setT({ ...t, descricao: e.target.value })} /></Campo>
         </div>
       </Folha>
+    </section>
+  )
+}
+
+function PlanoParceiro() {
+  return (
+    <section className="painel plano-parceiro">
+      <div className="painel-corpo linha-flex" style={{ gap: 16, alignItems: 'flex-start' }}>
+        <div className="plano-parceiro-ico" aria-hidden="true"><Handshake size={26} /></div>
+        <div>
+          <div className="muted pequeno">Seu plano</div>
+          <div className="display" style={{ fontSize: 40 }}>Parceiro Kort</div>
+          <p className="pequeno" style={{ marginTop: 6, maxWidth: '52ch' }}>
+            Sua barbearia é parceira do Kort: o acesso está liberado para sempre, com todas as funções e sem mensalidade.
+            Valeu por divulgar o Kort.
+          </p>
+        </div>
+      </div>
     </section>
   )
 }

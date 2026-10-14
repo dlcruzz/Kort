@@ -343,6 +343,10 @@ export interface AdminBarbearia {
   status_assinatura: StatusAssinSaas
   teste_ate: string | null
   proximo_vencimento: string | null
+  /** acesso vitalício em troca de divulgação: não paga e não entra na receita */
+  parceiro?: boolean
+  parceiro_desde?: string | null
+  parceiro_obs?: string | null
   barbeiros: number
   clientes: number
   agendamentos_30d: number
