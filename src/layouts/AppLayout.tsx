@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   CalendarDays, Receipt, Users, BarChart3, MessageCircle, Megaphone, Award, Scissors, UserCog, Package, Wallet,
@@ -14,6 +14,7 @@ import { Avatar, Folha } from '../components/ui'
 import { LinkAgendamento } from '../components/LinkAgendamento'
 import { AvisoNovos } from '../components/AvisoNovos'
 import { TelaPagamento } from '../components/TelaPagamento'
+import { CHAVE_ALUGUEL_PENDENTE } from '../lib/modos'
 
 type ItemMenu = { to: string; nome: string; icone: typeof CalendarDays; contador?: 'comandas' | 'espera' | 'estoque' }
 
@@ -57,6 +58,21 @@ export default function AppLayout() {
   const diasTeste = a.status === 'teste' && a.teste_ate ? Math.round((deIsoDia(a.teste_ate).getTime() - hoje().getTime()) / 86400000) : null
   const PAPEL = { dono: 'Dono', barbeiro: 'Barbeiro', recepcao: 'Recepção' }
   const respostas = useNaoLidas('barbearia', () => avisarGlobal('O suporte do Kort respondeu. Veja em Ajuda.'))
+  // quem aluga cadeira e informou o aluguel no cadastro: vira despesa do mês
+  useEffect(() => {
+    let valor = 0
+    try {
+      valor = Number(localStorage.getItem(CHAVE_ALUGUEL_PENDENTE) ?? 0)
+      localStorage.removeItem(CHAVE_ALUGUEL_PENDENTE)
+    } catch { /* sem storage: segue sem lançar */ }
+    if (valor > 0) acoes.salvarDespesa({ descricao: 'Aluguel da cadeira', categoria: 'Aluguel', valor_centavos: valor, pago: false })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  // quem trabalha sozinho não tem equipe: o item vira o perfil e o horário dele
+  const solo = estado.barbearia.modo_operacao === 'solo'
+  const grupos = solo
+    ? GRUPOS.map((g) => ({ ...g, itens: g.itens.map((it) => (it.to === '/app/equipe' ? { ...it, nome: 'Meu perfil e horário' } : it)) }))
+    : GRUPOS
 
   const sair = async () => {
     if (modo === 'demo') {
@@ -96,7 +112,7 @@ export default function AppLayout() {
           <ExternalLink size={16} color="#84847D" />
         </a>
 
-        {GRUPOS.map((g, i) => (
+        {grupos.map((g, i) => (
           <div className="rail-grupo" key={i}>
             {g.titulo && <div className="rail-grupo-tit">{g.titulo}</div>}
             <nav className="rail-nav">
@@ -192,7 +208,7 @@ export default function AppLayout() {
 
       <Folha aberta={mais} aoFechar={() => setMais(false)} titulo="Mais opções">
         <div className="menu-mais" onClick={() => setMais(false)}>
-          {[...GRUPOS.flatMap((g) => g.itens), { to: '/app/ajuda', nome: respostas ? `Ajuda (${respostas} nova${respostas > 1 ? 's' : ''})` : 'Ajuda', icone: LifeBuoy } as ItemMenu, { to: '/app/configuracoes', nome: 'Configurações', icone: Settings } as ItemMenu].map((it) => {
+          {[...grupos.flatMap((g) => g.itens), { to: '/app/ajuda', nome: respostas ? `Ajuda (${respostas} nova${respostas > 1 ? 's' : ''})` : 'Ajuda', icone: LifeBuoy } as ItemMenu, { to: '/app/configuracoes', nome: 'Configurações', icone: Settings } as ItemMenu].map((it) => {
             const Icone = it.icone
             return (
               <NavLink key={it.to} to={it.to}>

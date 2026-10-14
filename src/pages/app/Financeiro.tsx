@@ -16,6 +16,7 @@ const CATEGORIAS = ['Aluguel', 'Contas', 'Produtos', 'Marketing', 'Equipamentos'
 export default function Financeiro() {
   const { estado } = useKort()
   const cadeira = estado.barbearia.modo_operacao === 'cadeira_alugada'
+  const equipe = estado.barbearia.modo_operacao === 'equipe'
   const [aba, setAba] = useState<Aba>('resumo')
   return (
     <>
@@ -23,7 +24,7 @@ export default function Financeiro() {
       <div className="abas" role="tablist">
         <button role="tab" aria-selected={aba === 'resumo'} onClick={() => setAba('resumo')}>Resumo do mês</button>
         <button role="tab" aria-selected={aba === 'despesas'} onClick={() => setAba('despesas')}>Despesas</button>
-        <button role="tab" aria-selected={aba === 'comissoes'} onClick={() => setAba('comissoes')}>Fechamento da equipe</button>
+        {equipe && <button role="tab" aria-selected={aba === 'comissoes'} onClick={() => setAba('comissoes')}>Fechamento da equipe</button>}
         {cadeira && <button role="tab" aria-selected={aba === 'aluguel'} onClick={() => setAba('aluguel')}>Aluguel de cadeira</button>}
         <button role="tab" aria-selected={aba === 'mei'} onClick={() => setAba('mei')}>Limite do MEI</button>
         <button role="tab" aria-selected={aba === 'preco'} onClick={() => setAba('preco')}>Calculadora de preço</button>
@@ -57,13 +58,14 @@ function Resumo() {
   const entradas = servicos + alugueis + clube
   const saidas = despesas + comissoes
   const lucro = entradas - saidas
+  const temComissao = estado.barbearia.modo_operacao === 'equipe' || comissoes > 0
   const porCat = Object.entries(desp.reduce<Record<string, number>>((a, d) => { a[d.categoria] = (a[d.categoria] ?? 0) + d.valor_centavos; return a }, {})).sort((a, b) => b[1] - a[1])
 
   return (
     <>
       <Metricas itens={[
         { rot: 'Entrou', val: dinheiroCurto(entradas) },
-        { rot: 'Saiu', val: dinheiroCurto(saidas), det: 'Despesas e comissões' },
+        { rot: 'Saiu', val: dinheiroCurto(saidas), det: temComissao ? 'Despesas e comissões' : 'Despesas' },
         { rot: 'Sobrou', val: dinheiroCurto(lucro), det: entradas ? `${Math.round((lucro / entradas) * 100)}% do que entrou` : undefined },
         { rot: 'Despesas a pagar', val: dinheiroCurto(desp.filter((d) => !d.pago).reduce((t, d) => t + d.valor_centavos, 0)) },
       ]} />
@@ -75,7 +77,7 @@ function Resumo() {
               <li><span className="cresce">Serviços e produtos (caixa)</span><b className="num">{dinheiro(servicos)}</b></li>
               {clube > 0 && <li><span className="cresce">Mensalidades do clube</span><b className="num">{dinheiro(clube)}</b></li>}
               {alugueis > 0 && <li><span className="cresce">Aluguel de cadeiras recebido</span><b className="num">{dinheiro(alugueis)}</b></li>}
-              <li><span className="cresce muted">Comissões da equipe</span><b className="num" style={{ color: 'var(--perigo)' }}>- {dinheiro(comissoes)}</b></li>
+              {temComissao && <li><span className="cresce muted">Comissões da equipe</span><b className="num" style={{ color: 'var(--perigo)' }}>- {dinheiro(comissoes)}</b></li>}
               <li><span className="cresce muted">Despesas</span><b className="num" style={{ color: 'var(--perigo)' }}>- {dinheiro(despesas)}</b></li>
               <li style={{ borderTop: '1.5px solid var(--preto)' }}><b className="cresce">Resultado do mês</b><span className="display num" style={{ fontSize: 28 }}>{dinheiro(lucro)}</span></li>
             </ul>

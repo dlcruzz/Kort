@@ -27,7 +27,7 @@ create schema if not exists privado;
 -- ---------------------------------------------------------------------
 -- 1. TIPOS (ENUMS)
 -- ---------------------------------------------------------------------
-create type public.modo_operacao        as enum ('equipe', 'cadeira_alugada');
+create type public.modo_operacao        as enum ('equipe', 'cadeira_alugada', 'solo');
 create type public.papel_membro         as enum ('dono', 'barbeiro', 'recepcao');
 create type public.status_agendamento   as enum ('agendado', 'confirmado', 'em_atendimento', 'concluido', 'cancelado', 'faltou');
 create type public.origem_agendamento   as enum ('link', 'balcao', 'encaixe', 'lista_espera', 'mensagem');
@@ -731,7 +731,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Pode ver dados ligados a um barbeiro específico?
--- Modo equipe: qualquer membro vê tudo da barbearia.
+-- Modo equipe ou solo: qualquer membro vê tudo da barbearia.
 -- Modo cadeira alugada: o barbeiro só vê o que é dele; dono e recepção veem tudo.
 create or replace function privado.pode_ver_do_membro(p_barbearia uuid, p_membro uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
@@ -740,7 +740,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
     from public.membros m
     join public.barbearias b on b.id = m.barbearia_id
     where m.barbearia_id = p_barbearia and m.perfil_id = auth.uid() and m.ativo
-      and ( b.modo_operacao = 'equipe'
+      and ( b.modo_operacao in ('equipe', 'solo')
             or m.papel in ('dono', 'recepcao')
             or p_membro is null
             or m.id = p_membro )

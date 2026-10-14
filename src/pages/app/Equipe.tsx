@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Plus, Trash2, Send } from 'lucide-react'
+import { Plus, Trash2, Send, Users, Armchair } from 'lucide-react'
 import { useKort, useMapas } from '../../lib/store'
 import { dinheiroCurto, nomeDia, nomeDiaCurto, paraCentavos } from '../../lib/format'
 import type { Membro, MembroConfiguracao, PapelMembro } from '../../lib/types'
 import { Avatar, CabecalhoPagina, Campo, Folha, Segmentos, Switch } from '../../components/ui'
 import { useAvisar } from '../../components/avisos'
+import { AJUDA_MODO } from '../../lib/modos'
 
 const CORES = ['#E7F738', '#7FB8FF', '#FF9E6B', '#B79CFF', '#6FD3A6', '#FF7FA8', '#C9CAC6']
 const PAPEL: Record<PapelMembro, string> = { dono: 'Dono', barbeiro: 'Barbeiro', recepcao: 'Recepção' }
@@ -19,7 +20,18 @@ export default function Equipe() {
   const [m, setM] = useState<Partial<Membro> | null>(null)
   const [cfg, setCfg] = useState<Partial<MembroConfiguracao> & { metaTxt?: string; aluguelTxt?: string }>({})
   const [turnos, setTurnos] = useState<Turno[]>([])
-  const cadeira = estado.barbearia.modo_operacao === 'cadeira_alugada'
+  const modoCasa = estado.barbearia.modo_operacao
+  const cadeira = modoCasa === 'cadeira_alugada'
+  const solo = modoCasa === 'solo'
+  const equipe = modoCasa === 'equipe'
+  const ehDono = estado.usuarioPapel === 'dono'
+  const soDono = estado.membros.filter((x) => x.ativo).length <= 1
+  // no modo solo a tela mostra só a própria pessoa (nome no link, meta e horário)
+  const lista = solo ? estado.membros.filter((x) => x.id === estado.usuarioMembroId || x.papel === 'dono') : estado.membros
+  const mudarModo = (novo: 'equipe' | 'cadeira_alugada') => {
+    acoes.salvarBarbearia({ modo_operacao: novo })
+    avisar(novo === 'equipe' ? 'Pronto: agora é equipe com comissão' : 'Pronto: agora é aluguel de cadeiras')
+  }
 
   const abrir = (x?: Membro) => {
     setAba('dados')
@@ -30,7 +42,8 @@ export default function Equipe() {
       setTurnos(estado.jornadas.filter((j) => j.membro_id === x.id).map(({ dia_semana, inicio, fim }) => ({ dia_semana, inicio, fim })))
     } else {
       setM({ nome_exibicao: '', papel: 'barbeiro', cor_agenda: CORES[estado.membros.length % CORES.length], atende: true, ativo: true, bio: '' })
-      setCfg({ comissao_servico_pct: 40, comissao_produto_pct: 10, metaTxt: '300', aluguelTxt: '' })
+      // quem aluga cadeira não ganha comissão: começa zerado para não sair no fechamento
+      setCfg({ comissao_servico_pct: cadeira ? 0 : 40, comissao_produto_pct: cadeira ? 0 : 10, metaTxt: '300', aluguelTxt: '', dia_vencimento_aluguel: 5 })
       setTurnos(estado.horarios.map((h) => ({ dia_semana: h.dia_semana, inicio: h.abre, fim: h.fecha })))
     }
   }
@@ -51,26 +64,39 @@ export default function Equipe() {
   return (
     <>
       <CabecalhoPagina
-        titulo="Equipe"
-        sub={cadeira ? 'Modo cadeira alugada: cada barbeiro vê só os próprios clientes e o próprio caixa.' : 'Modo equipe: o app calcula a comissão de cada um no fechamento.'}
-        acoes={<button className="btn btn-primario" onClick={() => abrir()}><Plus /> Adicionar barbeiro</button>}
+        titulo={solo ? 'Meu perfil e horário' : 'Equipe'}
+        sub={solo ? 'Seu nome no link, sua meta do dia e seu horário de trabalho, com almoço e folgas.' : AJUDA_MODO[modoCasa]}
+        acoes={!solo && <button className="btn btn-primario" onClick={() => abrir()}><Plus /> Adicionar barbeiro</button>}
       />
+      {!solo && soDono && ehDono && (
+        <section className="painel" style={{ marginBottom: 16 }}>
+          <div className="painel-corpo">
+            <h2 style={{ marginBottom: 6 }}>Agora coloque quem trabalha com você</h2>
+            <ol className="pequeno" style={{ margin: '0 0 14px', paddingLeft: 18, lineHeight: 1.7 }}>
+              <li>Clique em <b>Adicionar barbeiro</b> e coloque o nome dele.</li>
+              <li>{cadeira ? 'Em "Aluguel e meta", diga quanto ele paga por mês e o dia do vencimento.' : 'Em "Comissão e meta", diga a porcentagem que ele ganha.'}</li>
+              <li>Salve, abra de novo e mande o convite pelo WhatsApp para ele ter o acesso dele.</li>
+            </ol>
+            <button className="btn btn-primario" onClick={() => abrir()}><Plus /> Adicionar barbeiro</button>
+          </div>
+        </section>
+      )}
       <div className="painel">
         <div className="tabela-wrap">
           <table className="tabela">
-            <thead><tr><th>Pessoa</th><th>Função</th><th>Trabalha</th><th className="dir">Comissão</th><th className="dir">Meta do dia</th>{cadeira && <th className="dir">Aluguel</th>}<th>Acesso</th></tr></thead>
+            <thead><tr><th>Pessoa</th>{!solo && <th>Função</th>}<th>Trabalha</th>{equipe && <th className="dir">Comissão</th>}<th className="dir">Meta do dia</th>{cadeira && <th className="dir">Aluguel</th>}{!solo && <th>Acesso</th>}</tr></thead>
             <tbody>
-              {estado.membros.map((x) => {
+              {lista.map((x) => {
                 const c = config.get(x.id)
                 return (
                   <tr key={x.id} className="clicavel" onClick={() => abrir(x)} style={!x.ativo ? { opacity: 0.5 } : undefined}>
                     <td><div className="linha-flex"><Avatar nome={x.nome_exibicao} cor={x.cor_agenda} /><div><div className="forte">{x.nome_exibicao}</div><div className="muted pequeno trunca" style={{ maxWidth: 260 }}>{x.bio}</div></div></div></td>
-                    <td>{PAPEL[x.papel]}</td>
+                    {!solo && <td>{PAPEL[x.papel]}</td>}
                     <td className="muted">{resumoJornada(x.id)}</td>
-                    <td className="dir num">{c?.comissao_servico_pct ? `${c.comissao_servico_pct}%` : '-'}</td>
+                    {equipe && <td className="dir num">{c?.comissao_servico_pct ? `${c.comissao_servico_pct}%` : '-'}</td>}
                     <td className="dir num">{c?.meta_diaria_centavos ? dinheiroCurto(c.meta_diaria_centavos) : '-'}</td>
                     {cadeira && <td className="dir num">{c?.aluguel_cadeira_centavos ? dinheiroCurto(c.aluguel_cadeira_centavos) : '-'}</td>}
-                    <td>{x.perfil_id || x.papel === 'dono' ? <span className="tag tag-ok">Tem login</span> : <span className="tag">Sem login</span>}</td>
+                    {!solo && <td>{x.perfil_id || x.papel === 'dono' ? <span className="tag tag-ok">Tem login</span> : <span className="tag">Sem login</span>}</td>}
                   </tr>
                 )
               })}
@@ -79,13 +105,26 @@ export default function Equipe() {
         </div>
       </div>
 
-      <Folha aberta={!!m} aoFechar={() => setM(null)} titulo={m?.id ? m.nome_exibicao ?? '' : 'Novo barbeiro'} larga
+      {solo && ehDono && (
+        <section className="painel" style={{ marginTop: 16 }}>
+          <div className="painel-corpo">
+            <h2 style={{ marginBottom: 4 }}>Vai trabalhar com mais gente?</h2>
+            <p className="muted pequeno" style={{ marginBottom: 12 }}>Mude o jeito que a casa funciona e esta tela vira a sua equipe. Seus clientes e sua agenda continuam iguais.</p>
+            <div className="linha-flex" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <button className="btn btn-sec" onClick={() => mudarModo('equipe')}><Users /> Vou ter barbeiros com comissão</button>
+              <button className="btn btn-sec" onClick={() => mudarModo('cadeira_alugada')}><Armchair /> Vou alugar cadeiras</button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <Folha aberta={!!m} aoFechar={() => setM(null)} titulo={solo ? 'Meu perfil' : m?.id ? m.nome_exibicao ?? '' : 'Novo barbeiro'} larga
         rodape={<><button className="btn btn-sec" onClick={() => setM(null)}>Cancelar</button><button className="btn btn-primario" disabled={!m?.nome_exibicao} onClick={salvar}>Salvar</button></>}>
         {m && (
           <>
             <div className="abas" role="tablist">
               <button role="tab" aria-selected={aba === 'dados'} onClick={() => setAba('dados')}>Dados</button>
-              <button role="tab" aria-selected={aba === 'ganhos'} onClick={() => setAba('ganhos')}>{cadeira ? 'Aluguel e meta' : 'Comissão e meta'}</button>
+              <button role="tab" aria-selected={aba === 'ganhos'} onClick={() => setAba('ganhos')}>{solo ? 'Meta e MEI' : cadeira ? 'Aluguel e meta' : 'Comissão e meta'}</button>
               {m.id && <button role="tab" aria-selected={aba === 'jornada'} onClick={() => setAba('jornada')}>Horário de trabalho</button>}
             </div>
 
@@ -93,10 +132,10 @@ export default function Equipe() {
               <div className="grade-campos">
                 <Campo rotulo="Nome que aparece no link" id="eq-nome" className="largo"><input id="eq-nome" className="input" value={m.nome_exibicao} onChange={(e) => setM({ ...m, nome_exibicao: e.target.value })} /></Campo>
                 <Campo rotulo="Especialidade" id="eq-bio" className="largo"><input id="eq-bio" className="input" value={m.bio ?? ''} onChange={(e) => setM({ ...m, bio: e.target.value })} placeholder="Ex.: degradê navalhado e barba" /></Campo>
-                <div className="campo">
+                {!solo && <div className="campo">
                   <span className="rotulo">Função</span>
                   <Segmentos rotulo="Função" valor={m.papel ?? 'barbeiro'} onChange={(v) => setM({ ...m, papel: v })} opcoes={[['barbeiro', 'Barbeiro'], ['recepcao', 'Recepção'], ['dono', 'Dono']]} />
-                </div>
+                </div>}
                 <div className="campo">
                   <span className="rotulo">Cor na agenda</span>
                   <div className="linha-flex" style={{ gap: 6 }}>
@@ -108,7 +147,7 @@ export default function Equipe() {
                 </div>
                 <div className="largo coluna gap-8">
                   <Switch checked={m.atende ?? true} onChange={(v) => setM({ ...m, atende: v })}>Atende clientes (aparece no link)</Switch>
-                  <Switch checked={m.ativo ?? true} onChange={(v) => setM({ ...m, ativo: v })}>Ativo na equipe</Switch>
+                  {!solo && <Switch checked={m.ativo ?? true} onChange={(v) => setM({ ...m, ativo: v })}>Ativo na equipe</Switch>}
                 </div>
                 {!m.perfil_id && m.papel !== 'dono' && (
                   <div className="largo painel" style={{ padding: 14 }}>
@@ -129,7 +168,7 @@ export default function Equipe() {
 
             {aba === 'ganhos' && (
               <div className="grade-campos">
-                {!cadeira && (
+                {equipe && (
                   <>
                     <Campo rotulo="Comissão sobre serviços" id="eq-cs"><div className="input-prefixo"><span>%</span><input id="eq-cs" type="number" min={0} max={100} className="input" value={cfg.comissao_servico_pct ?? 0} onChange={(e) => setCfg({ ...cfg, comissao_servico_pct: Number(e.target.value) })} /></div></Campo>
                     <Campo rotulo="Comissão sobre produtos" id="eq-cp"><div className="input-prefixo"><span>%</span><input id="eq-cp" type="number" min={0} max={100} className="input" value={cfg.comissao_produto_pct ?? 0} onChange={(e) => setCfg({ ...cfg, comissao_produto_pct: Number(e.target.value) })} /></div></Campo>

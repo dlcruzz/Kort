@@ -689,6 +689,80 @@
   margin-top: 30px;
 }
 
+/* onboarding: "como você trabalha?" em cartões grandes, um toque escolhe */
+.escolha-modo {
+  display: grid;
+  gap: 10px;
+}
+.escolha-modo-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: 16px 18px;
+  border: 1.5px solid var(--linha);
+  border-radius: var(--r-painel);
+  background: var(--branco);
+  color: var(--preto);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.escolha-modo-item:hover {
+  border-color: var(--grafite-claro);
+}
+.escolha-modo-item[aria-checked='true'] {
+  border-color: var(--preto);
+  box-shadow: var(--adesivo);
+}
+.escolha-modo-item:focus-visible {
+  outline: 2px solid var(--preto);
+  outline-offset: 2px;
+}
+.escolha-modo-marca {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--linha);
+  background: var(--branco);
+}
+.escolha-modo-item[aria-checked='true'] .escolha-modo-marca {
+  border-color: var(--preto);
+  background: var(--kort);
+  box-shadow: inset 0 0 0 3px var(--branco);
+}
+.escolha-modo-tit {
+  display: block;
+  font-weight: 700;
+  font-size: 16px;
+}
+.escolha-modo-txt {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--grafite);
+}
+.escolha-modo-muda {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.escolha-modo-muda li {
+  position: relative;
+  padding-left: 18px;
+  margin-top: 4px;
+}
+.escolha-modo-muda li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
 /* login do painel interno: amarelo, como o menu do admin */
 .auth-admin .auth-lado {
   background: var(--kort);
@@ -790,4 +864,30 @@
 .cupom-ok {
   color: #2e6a3e;
   font-weight: 600;
+}
+.onb-pergunta2 {
+  margin-top: 26px;
+  animation: onb-entra 0.25s ease-out;
+}
+.onb-pergunta2 h2 {
+  font-size: 20px;
+  margin: 0 0 12px;
+}
+.onb-resumo {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--grafite-claro);
+  border-radius: 12px;
+  animation: onb-entra 0.25s ease-out;
+}
+.onb-resumo-tit {
+  font-weight: 700;
+  font-size: 14px;
+}
+@keyframes onb-entra {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onb-pergunta2, .onb-resumo { animation: none; }
 }

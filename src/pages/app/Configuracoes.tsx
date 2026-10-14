@@ -4,9 +4,11 @@ import { Copy, Handshake, ThumbsUp, Plus, Smartphone } from 'lucide-react'
 import { useKort } from '../../lib/store'
 import { comDesconto, dataCompleta, dinheiro, nomeDia, nomeMes, deIsoDia, dominio, linkPublico } from '../../lib/format'
 import { pixCopiaECola } from '../../lib/pix'
-import { CabecalhoPagina, Campo, Confirmar, Folha, Segmentos, Switch } from '../../components/ui'
+import { CabecalhoPagina, Campo, Confirmar, Folha, Switch } from '../../components/ui'
 import { PixQr } from '../../components/PixQr'
 import { useAvisar } from '../../components/avisos'
+import { AJUDA_MODO, NOME_MODO } from '../../lib/modos'
+import type { ModoOperacao } from '../../lib/types'
 import { PLANOS } from '../Site'
 import { irParaPagamento, useAguardarLiberacao } from '../../lib/pagamento'
 import { CreditCard } from 'lucide-react'
@@ -76,8 +78,11 @@ function DadosBarbearia() {
           <div className="painel-cab"><h2>Regras da agenda</h2></div>
           <div className="painel-corpo coluna gap-16">
             <div className="campo">
-              <span className="rotulo">Como a casa funciona</span>
-              <Segmentos rotulo="Modo" valor={b.modo_operacao} onChange={(v) => set('modo_operacao', v)} opcoes={[['equipe', 'Equipe com comissão'], ['cadeira_alugada', 'Cadeira alugada']]} />
+              <label className="rotulo" htmlFor="cf-modo">Como você trabalha</label>
+              <select id="cf-modo" className="select" value={b.modo_operacao} onChange={(e) => set('modo_operacao', e.target.value as ModoOperacao)}>
+                {(Object.keys(NOME_MODO) as ModoOperacao[]).map((m) => <option key={m} value={m}>{NOME_MODO[m]}</option>)}
+              </select>
+              <span className="ajuda">{AJUDA_MODO[b.modo_operacao]}</span>
             </div>
             <Campo rotulo="Cliente pode cancelar até" id="cf-canc">
               <select id="cf-canc" className="select" value={b.antecedencia_cancelamento_min} onChange={(e) => set('antecedencia_cancelamento_min', Number(e.target.value))}>

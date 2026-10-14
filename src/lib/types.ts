@@ -6,7 +6,7 @@
 export type Uuid = string
 export type Centavos = number
 
-export type ModoOperacao = 'equipe' | 'cadeira_alugada'
+export type ModoOperacao = 'solo' | 'equipe' | 'cadeira_alugada'
 export type PapelMembro = 'dono' | 'barbeiro' | 'recepcao'
 export type StatusAgendamento = 'agendado' | 'confirmado' | 'em_atendimento' | 'concluido' | 'cancelado' | 'faltou'
 export type OrigemAgendamento = 'link' | 'balcao' | 'encaixe' | 'lista_espera' | 'mensagem'
