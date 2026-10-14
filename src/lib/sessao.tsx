@@ -68,7 +68,7 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
     setVinculo(v ? { barbearia_id: v.barbearia_id, membro_id: v.id, papel: v.papel, slug: v.barbearias?.slug ?? '', nome: v.barbearias?.nome ?? '' } : null)
     setPronto(true)
     // último acesso (base do alerta "sem uso há 7 dias" do painel)
-    void supabase.from('perfis').update({ ultimo_acesso_em: new Date().toISOString() }).eq('id', s.user.id)
+    supabase.from('perfis').update({ ultimo_acesso_em: new Date().toISOString() }).eq('id', s.user.id).then(() => undefined, () => undefined)
   }, [])
 
   useEffect(() => {
