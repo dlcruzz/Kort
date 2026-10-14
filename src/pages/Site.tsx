@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Check } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Check, Play } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { TextoContado, useRevelar } from '../lib/movimento'
 import { dinheiroCurto, dominio } from '../lib/format'
 import { useRegistrarVisita } from '../lib/visitas'
@@ -65,6 +65,7 @@ export default function Site() {
         <div className="site-topo-in">
           <Link to="/" aria-label="Kort, página inicial"><img src="/logo-sm.png" alt="Kort" /></Link>
           <nav aria-label="Seções">
+            <a href="#video">Ver o vídeo</a>
             <a href="#dia">Como funciona</a>
             <a href="#planos">Planos</a>
           </nav>
@@ -110,6 +111,8 @@ export default function Site() {
           </div>
         </div>
       </section>
+
+      <VideoKort />
 
       <section className="secao" id="dia">
         <h2 className="secao-tit">Um dia na barbearia com o Kort</h2>
@@ -196,5 +199,35 @@ function Recibo() {
         <b>{visivel ? <TextoContado texto="R$ 2.920" ms={1400} /> : 'R$ 0'}</b>
       </div>
     </div>
+  )
+}
+
+// Vídeo de apresentação no YouTube. Só carrega o player quando a pessoa
+// clica (capa leve no lugar), para não pesar a página nem gravar cookie antes.
+const VIDEO_ID = '7o1VYQ9h7bQ'
+function VideoKort() {
+  const [tocando, setTocando] = useState(false)
+  return (
+    <section className="video-sec" id="video">
+      <div className="video-in">
+        <h2 className="secao-tit">Veja o Kort funcionando em 2 minutos</h2>
+        <p className="secao-sub">Do cliente marcando pelo link até o fechamento do mês, na visão do cliente, do barbeiro e do dono.</p>
+        <div className="video-quadro">
+          {tocando ? (
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+              title="Kort: o sistema de agendamento e gestão feito pra barbearia de bairro"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          ) : (
+            <button type="button" className="video-capa" onClick={() => setTocando(true)} aria-label="Assistir ao vídeo do Kort">
+              <img src="/video-capa.jpg" alt="" width={1280} height={720} loading="lazy" />
+              <span className="video-play"><Play aria-hidden="true" /> Assistir</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
   )
 }

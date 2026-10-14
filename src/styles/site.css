@@ -54,6 +54,89 @@
   box-shadow: 3px 3px 0 var(--sombra);
 }
 
+/* ---------- vídeo de apresentação (logo depois da abertura) */
+.video-sec {
+  background: var(--preto);
+  color: var(--papel);
+  border-top: 1px solid var(--asfalto);
+}
+.video-in {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 72px 20px 88px;
+}
+.video-sec .secao-tit {
+  max-width: 20ch;
+}
+.video-sec .secao-sub {
+  color: var(--lamina);
+}
+.video-quadro {
+  position: relative;
+  margin-top: 32px;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--asfalto);
+  box-shadow: 6px 6px 0 var(--kort);
+}
+.video-quadro iframe,
+.video-capa {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.video-capa {
+  padding: 0;
+  cursor: pointer;
+  background: var(--preto);
+}
+.video-capa img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.video-play {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 26px;
+  border-radius: 8px;
+  background: var(--kort);
+  color: var(--preto);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 26px;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0 var(--sombra);
+  transition: transform .15s;
+}
+.video-play svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+.video-capa:hover .video-play,
+.video-capa:focus-visible .video-play {
+  transform: translateX(-50%) scale(1.05);
+}
+.video-capa:focus-visible {
+  outline: 3px solid var(--kort);
+  outline-offset: -3px;
+}
+@media (max-width: 640px) {
+  .video-in { padding: 48px 16px 60px; }
+  .video-play { bottom: 10px; padding: 7px 14px; font-size: 17px; gap: 7px; }
+  .video-play svg { width: 17px; height: 17px; }
+}
+
 /* ---------- abertura
    O destaque é a própria marca: o título grande em Big Shoulders com a
    sombra deslocada da logo, e ao lado o que o cliente vê de verdade. */
