@@ -785,3 +785,9 @@
 .privacidade p + p { margin-top: 10px; }
 .privacidade-escolha { margin: 12px 0; }
 .privacidade-escolha b { color: var(--preto); }
+
+/* cupom de divulgador válido no cadastro */
+.cupom-ok {
+  color: #2e6a3e;
+  font-weight: 600;
+}

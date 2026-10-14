@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Check, Play } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { TextoContado, useRevelar } from '../lib/movimento'
 import { dinheiroCurto, dominio } from '../lib/format'
 import { useRegistrarVisita } from '../lib/visitas'
+import { guardarCupomDaUrl } from '../lib/cupom'
 
 // Mesmos preços da tabela planos (supabase/producao.sql).
 export const PLANOS = [
@@ -59,6 +60,7 @@ const DIA = [
 
 export default function Site() {
   useRegistrarVisita('/')
+  useEffect(guardarCupomDaUrl, [])
   return (
     <div className="site">
       <header className="site-topo">

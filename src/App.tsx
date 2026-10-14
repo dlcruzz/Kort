@@ -36,6 +36,7 @@ import AdminBarbearias from './pages/admin/Barbearias'
 import AdminBarbeariaDetalhe from './pages/admin/BarbeariaDetalhe'
 import AdminUso from './pages/admin/Uso'
 import AdminFaturas from './pages/admin/Faturas'
+import AdminCupons from './pages/admin/Cupons'
 import AdminSugestoes from './pages/admin/Sugestoes'
 import AdminSuporte from './pages/admin/Suporte'
 
@@ -81,6 +82,7 @@ export default function App() {
         <Route path="barbearias/:id" element={<AdminBarbeariaDetalhe />} />
         <Route path="uso" element={<AdminUso />} />
         <Route path="faturas" element={<AdminFaturas />} />
+        <Route path="cupons" element={<AdminCupons />} />
         <Route path="sugestoes" element={<AdminSugestoes />} />
         <Route path="suporte" element={<AdminSuporte />} />
       </Route>

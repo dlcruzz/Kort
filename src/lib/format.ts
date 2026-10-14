@@ -10,6 +10,9 @@ export const dinheiroCurto = (centavos: number) =>
   centavos % 100 === 0 ? `R$ ${(centavos / 100).toLocaleString('pt-BR')}` : dinheiro(centavos)
 
 /** "45,50" -> 4550 */
+/** preço com desconto em %, arredondado igual ao banco (privado.com_desconto) */
+export const comDesconto = (centavos: number, pct = 0) => Math.round((centavos * (100 - Math.min(Math.max(pct, 0), 100))) / 100)
+
 export const paraCentavos = (texto: string) => {
   const limpo = texto.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
   const n = Number(limpo)

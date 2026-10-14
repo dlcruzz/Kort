@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Campo } from '../../components/ui'
 import { mascaraTelefone, telefoneE164 } from '../../lib/format'
@@ -6,6 +6,7 @@ import { supabase, supabaseConfigurado } from '../../lib/supabase'
 import { useSessao } from '../../lib/sessao'
 import { LadoAuth, erroAuth } from './Entrar'
 import { useRegistrarVisita } from '../../lib/visitas'
+import { cupomGuardado, esquecerCupom, normalizarCupom, validarCupom, type CupomValido } from '../../lib/cupom'
 
 // O trigger tg_novo_usuario cria a linha em "perfis" com nome e telefone.
 
@@ -17,6 +18,20 @@ export default function CriarConta() {
   const [erros, setErros] = useState<Record<string, string>>({})
   const [enviando, setEnviando] = useState(false)
   const [confirmar, setConfirmar] = useState(false)
+  // cupom de divulgador (opcional): undefined = conferindo ou sem banco, null = não existe
+  const [cupom, setCupom] = useState(cupomGuardado)
+  const [infoCupom, setInfoCupom] = useState<CupomValido | null | undefined>(undefined)
+
+  useEffect(() => {
+    setInfoCupom(undefined)
+    if (cupom.length < 3) return
+    let vivo = true
+    const t = setTimeout(async () => {
+      const r = await validarCupom(cupom)
+      if (vivo) setInfoCupom(r)
+    }, 350)
+    return () => { vivo = false; clearTimeout(t) }
+  }, [cupom])
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault()
@@ -25,6 +40,7 @@ export default function CriarConta() {
     if (f.telefone.replace(/\D/g, '').length < 10) er.telefone = 'Número com DDD.'
     if (!f.email.includes('@')) er.email = 'Confira o e-mail.'
     if (f.senha.length < 6) er.senha = 'Use pelo menos 6 caracteres.'
+    if (cupom && (cupom.length < 3 || infoCupom === null)) er.cupom = 'Esse cupom não existe. Confira ou deixe em branco.'
     setErros(er)
     if (Object.keys(er).length) return
     if (!supabaseConfigurado || !supabase) {
@@ -37,7 +53,7 @@ export default function CriarConta() {
       email: f.email.trim(),
       password: f.senha,
       options: {
-        data: { nome: f.nome.trim(), telefone: telefoneE164(f.telefone) },
+        data: { nome: f.nome.trim(), telefone: telefoneE164(f.telefone), ...(cupom ? { cupom } : {}) },
         emailRedirectTo: `${window.location.origin}/comecar`,
       },
     })
@@ -46,6 +62,7 @@ export default function CriarConta() {
       setErros({ senha: erroAuth(error.message) })
       return
     }
+    esquecerCupom()
     if (!data.session) {
       // projeto com "confirmar e-mail" ligado
       setConfirmar(true)
@@ -89,6 +106,10 @@ export default function CriarConta() {
           </Campo>
           <Campo rotulo="Senha" id="senha" erro={erros.senha}>
             <input id="senha" className="input" type="password" value={f.senha} onChange={(e) => setF({ ...f, senha: e.target.value })} autoComplete="new-password" />
+          </Campo>
+          <Campo rotulo="Cupom (opcional)" id="cupom" erro={erros.cupom}
+            ajuda={infoCupom ? <span className="cupom-ok">Cupom de {infoCupom.nome}: {String(infoCupom.desconto_pct).replace('.', ',')}% de desconto na mensalidade.</span> : 'Ganhou um cupom de algum barbeiro? Coloque aqui.'}>
+            <input id="cupom" className="input" value={cupom} onChange={(e) => setCupom(normalizarCupom(e.target.value))} placeholder="EX.: PHBARBER" autoCapitalize="characters" autoComplete="off" spellCheck={false} />
           </Campo>
           <button className="btn btn-primario btn-grande btn-bloco" type="submit" disabled={enviando}>{enviando ? 'Criando...' : 'Criar conta'}</button>
           <p className="troca">Já tem conta? <Link to="/entrar">Entrar</Link></p>

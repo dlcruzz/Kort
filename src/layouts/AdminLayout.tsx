@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Gauge, Store, Activity, FileText, Lightbulb, LogOut, LifeBuoy } from 'lucide-react'
+import { Gauge, Store, Activity, FileText, Lightbulb, LogOut, LifeBuoy, TicketPercent } from 'lucide-react'
 import { useNaoLidas } from '../lib/suporte'
 import { avisarGlobal } from '../components/avisos'
 import { RailIndicador } from '../components/RailIndicador'
@@ -12,6 +12,7 @@ const ITENS = [
   { to: '/admin/barbearias', nome: 'Barbearias', icone: Store },
   { to: '/admin/uso', nome: 'Uso das funções', icone: Activity },
   { to: '/admin/faturas', nome: 'Mensalidades', icone: FileText },
+  { to: '/admin/cupons', nome: 'Cupons', icone: TicketPercent },
   { to: '/admin/suporte', nome: 'Suporte', icone: LifeBuoy },
   { to: '/admin/sugestoes', nome: 'Sugestões', icone: Lightbulb },
 ]

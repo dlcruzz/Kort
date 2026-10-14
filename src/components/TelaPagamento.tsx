@@ -6,7 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, CreditCard, LifeBuoy, LogOut, QrCode } from 'lucide-react'
 import { useKort } from '../lib/store'
 import { useSessao } from '../lib/sessao'
-import { dinheiro } from '../lib/format'
+import { comDesconto, dinheiro } from '../lib/format'
 import { PLANOS } from '../pages/Site'
 import { escolherPlanoAgora, irParaPagamento, useAguardarLiberacao } from '../lib/pagamento'
 
@@ -23,6 +23,7 @@ export function TelaPagamento() {
   const voltouPago = params.get('pagamento') === 'ok'
   const { esperando, desistiu } = useAguardarLiberacao(estado.barbearia.id, voltouPago, () => void recarregar())
   const escolhido = PLANOS.find((p) => p.slug === plano)!
+  const mensal = (c: number) => comDesconto(c, a.desconto_pct ?? 0)
   const fimDoTeste = !!a.teste_ate && !estado.faturas.some((f) => f.status === 'paga')
 
   const pagar = async () => {
@@ -79,15 +80,16 @@ export function TelaPagamento() {
           {pagos.map((p) => (
             <button key={p.slug} role="radio" aria-checked={plano === p.slug} onClick={() => setPlano(p.slug)}>
               <span className="nome">{p.nome}{p.destaque && <span className="tag tag-kort">mais escolhido</span>}</span>
-              <span className="preco">{dinheiro(p.preco)}<small>/mês</small></span>
+              <span className="preco">{dinheiro(mensal(p.preco))}<small>/mês</small></span>
               <span className="pq">{p.pq}</span>
               {plano === p.slug && <Check className="marca" size={18} />}
             </button>
           ))}
         </div>
 
+        {(a.desconto_pct ?? 0) > 0 && <p className="muted pequeno" style={{ textAlign: 'center' }}>Valores já com {String(a.desconto_pct).replace('.', ',')}% de desconto do seu cupom.</p>}
         <button className="btn btn-primario btn-grande btn-bloco" onClick={pagar} disabled={carregando}>
-          {carregando ? 'Abrindo o pagamento...' : `Pagar ${dinheiro(escolhido.preco)} e liberar agora`}
+          {carregando ? 'Abrindo o pagamento...' : `Pagar ${dinheiro(mensal(escolhido.preco))} e liberar agora`}
         </button>
         <div className="pagar-formas"><QrCode size={16} /> Pix <CreditCard size={16} /> Cartão de crédito ou débito</div>
         <p className="muted pequeno" style={{ textAlign: 'center' }}>Pagamento seguro pelo Mercado Pago. A conta libera sozinha assim que o pagamento é aprovado.</p>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Copy, Handshake, ThumbsUp, Plus, Smartphone } from 'lucide-react'
 import { useKort } from '../../lib/store'
-import { dataCompleta, dinheiro, nomeDia, nomeMes, deIsoDia, dominio, linkPublico } from '../../lib/format'
+import { comDesconto, dataCompleta, dinheiro, nomeDia, nomeMes, deIsoDia, dominio, linkPublico } from '../../lib/format'
 import { pixCopiaECola } from '../../lib/pix'
 import { CabecalhoPagina, Campo, Confirmar, Folha, Segmentos, Switch } from '../../components/ui'
 import { PixQr } from '../../components/PixQr'
@@ -202,12 +202,15 @@ function Plano() {
       setAbrindo(false)
     }
   }
+  const desc = a.desconto_pct ?? 0
+  const mensal = (c: number) => comDesconto(c, desc)
+  const cupom = desc > 0 ? ` (${String(desc).replace('.', ',')}% de desconto do cupom)` : ''
   const linhaPlano =
     a.status === 'teste' && a.teste_ate
-      ? `Teste grátis até ${dataCompleta(a.teste_ate)}. Depois, ${a.preco_centavos ? `${dinheiro(a.preco_centavos)} por mês` : 'grátis'}.`
+      ? `Teste grátis até ${dataCompleta(a.teste_ate)}. Depois, ${a.preco_centavos ? `${dinheiro(mensal(a.preco_centavos))} por mês${cupom}` : 'grátis'}.`
       : a.preco_centavos === 0
         ? 'Grátis, até 50 horários por mês.'
-        : `${dinheiro(a.preco_centavos)} por mês${a.proximo_vencimento ? `, vence dia ${deIsoDia(a.proximo_vencimento).getDate()}` : ''}`
+        : `${dinheiro(mensal(a.preco_centavos))} por mês${cupom}${a.proximo_vencimento ? `, vence dia ${deIsoDia(a.proximo_vencimento).getDate()}` : ''}`
 
   return (
     <div className="duas-colunas">
@@ -328,7 +331,7 @@ function Plano() {
                 <div style={{ fontWeight: 700 }}>{p.nome}</div>
                 <div className="muted pequeno">{p.pq}</div>
               </div>
-              <b className="num">{dinheiro(p.preco)}</b>
+              <b className="num">{dinheiro(mensal(p.preco))}</b>
               {p.slug === a.plano_slug ? <span className="tag tag-preto">Atual</span> : <button className="btn btn-sec btn-pequeno" onClick={() => { setTrocar(false); setEscolhido(p) }}>Escolher</button>}
             </div>
           ))}
@@ -337,7 +340,7 @@ function Plano() {
       <Confirmar
         aberto={!!escolhido}
         titulo={`Mudar para o plano ${escolhido?.nome}?`}
-        texto={escolhido?.preco ? `A mensalidade passa a ser ${dinheiro(escolhido.preco)}.` : 'No plano grátis a página aceita até 50 horários por mês.'}
+        texto={escolhido?.preco ? `A mensalidade passa a ser ${dinheiro(mensal(escolhido.preco))}.` : 'No plano grátis a página aceita até 50 horários por mês.'}
         acao="Mudar plano"
         aoCancelar={() => setEscolhido(null)}
         aoConfirmar={() => {

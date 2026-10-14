@@ -248,6 +248,7 @@ export async function carregarEstado(sb: SupabaseClient, barbeariaId: string, pe
       teste_ate: assinatura?.teste_ate ?? null,
       proximo_vencimento: assinatura?.proximo_vencimento ?? null,
       parceiro: !!assinatura?.parceiro,
+      desconto_pct: Number(assinatura?.desconto_pct ?? 0),
     },
     usuarioMembroId: eu?.id ?? membros?.[0]?.id ?? '',
     usuarioPapel: eu?.papel ?? 'barbeiro',

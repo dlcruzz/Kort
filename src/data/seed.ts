@@ -49,7 +49,7 @@ export interface Estado {
   portfolio: FotoPortfolio[]
   faturas: Fatura[]
   sugestoes: Sugestao[]
-  assinatura: { plano: string; plano_slug: string; preco_centavos: number; status: StatusAssinSaas; teste_ate: string | null; proximo_vencimento: string | null; parceiro?: boolean }
+  assinatura: { plano: string; plano_slug: string; preco_centavos: number; status: StatusAssinSaas; teste_ate: string | null; proximo_vencimento: string | null; parceiro?: boolean; /** desconto do cupom de divulgador (%) */ desconto_pct?: number }
   usuarioMembroId: string
   usuarioPapel: PapelMembro
 }
