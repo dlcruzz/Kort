@@ -107,9 +107,9 @@ export default function CriarConta() {
           <Campo rotulo="Senha" id="senha" erro={erros.senha}>
             <input id="senha" className="input" type="password" value={f.senha} onChange={(e) => setF({ ...f, senha: e.target.value })} autoComplete="new-password" />
           </Campo>
-          <Campo rotulo="Cupom (opcional)" id="cupom" erro={erros.cupom}
-            ajuda={infoCupom ? <span className="cupom-ok">Cupom de {infoCupom.nome}: {String(infoCupom.desconto_pct).replace('.', ',')}% de desconto na mensalidade.</span> : 'Ganhou um cupom de algum barbeiro? Coloque aqui.'}>
-            <input id="cupom" className="input" value={cupom} onChange={(e) => setCupom(normalizarCupom(e.target.value))} placeholder="EX.: PHBARBER" autoCapitalize="characters" autoComplete="off" spellCheck={false} />
+          <Campo rotulo="Tem cupom? Ganhe 5% de desconto" id="cupom" erro={erros.cupom}
+            ajuda={infoCupom ? <span className="cupom-ok">Cupom aplicado: {String(infoCupom.desconto_pct).replace('.', ',')}% de desconto em todas as mensalidades.</span> : 'Viu o Kort no perfil de algum barbeiro? Coloque o cupom dele e ganhe 5% de desconto na mensalidade.'}>
+            <input id="cupom" className="input" value={cupom} onChange={(e) => setCupom(normalizarCupom(e.target.value))} placeholder="Digite o cupom (opcional)" autoCapitalize="characters" autoComplete="off" spellCheck={false} />
           </Campo>
           <button className="btn btn-primario btn-grande btn-bloco" type="submit" disabled={enviando}>{enviando ? 'Criando...' : 'Criar conta'}</button>
           <p className="troca">Já tem conta? <Link to="/entrar">Entrar</Link></p>

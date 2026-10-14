@@ -208,7 +208,7 @@ export default function AdminCupons() {
         rodape={<button className="btn btn-primario btn-bloco" disabled={salvando} onClick={() => void salvar()}>{salvando ? 'Salvando...' : 'Salvar cupom'}</button>}>
         {form && (
           <div className="coluna gap-8">
-            <Campo rotulo="Código" id="c-cod" ajuda="Letras e números, sem espaço. Ex.: PHBARBER">
+            <Campo rotulo="Código" id="c-cod" ajuda="Letras e números, sem espaço. Ex.: o @ do barbeiro, como JOAOBARBER">
               <input id="c-cod" className="input" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value.replace(/\s/g, '').toUpperCase() })} />
             </Campo>
             <Campo rotulo="Nome do divulgador" id="c-nome">
