@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   CalendarDays, Receipt, Users, BarChart3, MessageCircle, Megaphone, Award, Scissors, UserCog, Package, Wallet,
-  Settings, ExternalLink, MoreHorizontal, LogOut, Shield, LifeBuoy,
+  Settings, ExternalLink, MoreHorizontal, LogOut, Shield, LifeBuoy, Store,
 } from 'lucide-react'
 import { useNaoLidas } from '../lib/suporte'
 import { avisarGlobal } from '../components/avisos'
@@ -22,6 +22,7 @@ const GRUPOS: Array<{ titulo: string | null; itens: ItemMenu[] }> = [
   {
     titulo: null,
     itens: [
+      { to: '/app/minha-barbearia', nome: 'Minha Barbearia', icone: Store },
       { to: '/app/agenda', nome: 'Agenda', icone: CalendarDays },
       { to: '/app/caixa', nome: 'Caixa', icone: Receipt, contador: 'comandas' },
       { to: '/app/clientes', nome: 'Clientes', icone: Users },

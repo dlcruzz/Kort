@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Check, MapPin, Star, Clock3, Instagram, CalendarPlus, Share2 } from 'lucide-react'
-import { usePaginaPublica } from '../../lib/publico'
+import { ArrowLeft, Check, MapPin, Star, Clock3, Instagram, CalendarPlus, Share2, X, ChevronLeft, ChevronRight, Minus, Plus, ShoppingBag } from 'lucide-react'
+import { usePaginaPublica, type FotoPublica, type ProdutoPublico } from '../../lib/publico'
 import { horariosLivres, type Slot } from '../../lib/agenda'
 import {
-  dataLonga, dinheiroCurto, hhmmParaMin, hoje, isoDia, mascaraTelefone, nomeDiaCurto, plural, somaDias, telefoneE164,
+  dataLonga, dinheiro, dinheiroCurto, hhmmParaMin, hoje, isoDia, mascaraTelefone, nomeDiaCurto, plural, somaDias, telefoneE164,
   minParaHhmm, primeiroNome,
 } from '../../lib/format'
 import { Avatar, Campo } from '../../components/ui'
@@ -14,6 +14,7 @@ import { TelaCarregando } from '../../components/guardas'
 import { IconeWhats } from '../../components/IconeWhats'
 
 type Passo = 1 | 2 | 3 | 4 | 5
+type AbaPub = 'agendar' | 'portfolio' | 'produtos'
 const QUALQUER = 'qualquer'
 
 export default function Agendar() {
@@ -58,6 +59,9 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
   const [erroEnvio, setErroEnvio] = useState('')
   const [copiado, setCopiado] = useState(false)
   const [dir, setDir] = useState<'frente' | 'tras'>('frente')
+  const [aba, setAba] = useState<AbaPub>('agendar')
+  const temAbas = estado.portfolio.length > 0 || estado.produtos.length > 0
+  const agendando = aba === 'agendar'
 
   const servicosAtivos = estado.servicos.filter((s) => s.ativo).sort((a, c) => a.ordem - c.ordem)
   const escolhidos = servicoIds.map((id) => estado.servicos.find((s) => s.id === id)!).filter(Boolean)
@@ -181,8 +185,14 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
   return (
     <div className="pub">
       <div className="pub-wrap">
-        <header className="pub-capa">
-          <h1>{b.nome}</h1>
+        {b.capa_url && passo === 1 && (
+          <div className="pub-capa-foto"><img src={b.capa_url} alt={`Foto da ${b.nome}`} /></div>
+        )}
+        <header className={`pub-capa ${b.capa_url && passo === 1 ? 'com-foto' : ''}`}>
+          <div className="pub-titulo">
+            {b.logo_url && <img className="pub-logo" src={b.logo_url} alt={`Logo da ${b.nome}`} />}
+            <h1>{b.nome}</h1>
+          </div>
           {passo === 1 && <p className="desc">{b.descricao}</p>}
           <div className="pub-info">
             {media > 0 && (
@@ -209,17 +219,32 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
           </div>
         </header>
 
-        {passo < 5 && (
+        {temAbas && passo === 1 && (
+          <div className="pub-abas" role="tablist">
+            <button role="tab" aria-selected={aba === 'agendar'} onClick={() => setAba('agendar')}>Agendar</button>
+            {estado.portfolio.length > 0 && <button role="tab" aria-selected={aba === 'portfolio'} onClick={() => setAba('portfolio')}>Portfólio</button>}
+            {estado.produtos.length > 0 && <button role="tab" aria-selected={aba === 'produtos'} onClick={() => setAba('produtos')}>Produtos</button>}
+          </div>
+        )}
+
+        {aba === 'portfolio' && <PortfolioPublico fotos={estado.portfolio} nomeDe={(id) => (id ? mapaMembro.get(id)?.nome_exibicao : undefined)} aoAgendar={() => setAba('agendar')} />}
+        {aba === 'produtos' && (
+          <ProdutosPublicos produtos={estado.produtos} whatsapp={b.whatsapp} nomeBarbearia={b.nome}
+            nome={nome} setNome={setNome} tel={tel} setTel={setTel} reservar={pagina.reservarProduto} />
+        )}
+
+        {agendando && passo < 5 && (
           <div className="pub-passos" aria-hidden="true">
             {[1, 2, 3, 4].map((n) => <span key={n} className={n <= passo ? 'feito' : ''} />)}
           </div>
         )}
-        {passo > 1 && passo < 5 && (
+        {agendando && passo > 1 && passo < 5 && (
           <button className="pub-voltar" onClick={voltar}>
             <ArrowLeft /> Voltar
           </button>
         )}
 
+        {agendando && (
         <div key={passo} className={dir === 'frente' ? 'passo-frente' : 'passo-tras'}>
         {/* 1. serviços */}
         {passo === 1 && (
@@ -399,6 +424,7 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
         )}
 
         </div>
+        )}
 
         <footer className="pub-rodape">
           <span>Agendamento online</span>
@@ -408,7 +434,7 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
         </footer>
       </div>
 
-      {passo < 5 && (
+      {agendando && passo < 5 && (
         <div className="pub-resumo">
           <div className="pub-resumo-in">
             <div>
@@ -425,5 +451,172 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
         </div>
       )}
     </div>
+  )
+}
+
+/* ---------------------------------------------------------------------
+   Portfólio: fotos dos cortes, com tela cheia ao tocar
+--------------------------------------------------------------------- */
+function PortfolioPublico({ fotos, nomeDe, aoAgendar }: { fotos: FotoPublica[]; nomeDe: (id: string | null) => string | undefined; aoAgendar: () => void }) {
+  const [aberta, setAberta] = useState<number | null>(null)
+  const f = aberta !== null ? fotos[aberta] : null
+  const ir = (passo: number) => setAberta((i) => (i === null ? null : (i + passo + fotos.length) % fotos.length))
+
+  useEffect(() => {
+    if (aberta === null) return
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAberta(null)
+      if (e.key === 'ArrowRight') ir(1)
+      if (e.key === 'ArrowLeft') ir(-1)
+    }
+    document.addEventListener('keydown', tecla)
+    document.body.style.overflow = 'hidden'
+    return () => { document.removeEventListener('keydown', tecla); document.body.style.overflow = '' }
+  }, [aberta]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <section>
+      <div className="pub-passo-tit"><h2>Cortes feitos aqui</h2></div>
+      <div className="pub-galeria">
+        {fotos.map((x, i) => (
+          <button key={x.id} className="pub-galeria-item" style={atraso(i)} onClick={() => setAberta(i)} aria-label={x.legenda ?? 'Ver foto'}>
+            <img src={x.url} alt={x.legenda ?? 'Corte'} loading="lazy" />
+            {x.legenda && <span>{x.legenda}</span>}
+          </button>
+        ))}
+      </div>
+      <button className="btn btn-primario btn-grande pub-cta" onClick={aoAgendar}>Quero um desses</button>
+
+      {f && (
+        <div className="pub-zoom" role="dialog" aria-modal="true" aria-label="Foto do corte" onClick={() => setAberta(null)}>
+          <button className="pub-zoom-fechar" aria-label="Fechar"><X /></button>
+          <img src={f.url} alt={f.legenda ?? 'Corte'} onClick={(e) => e.stopPropagation()} />
+          {(f.legenda || nomeDe(f.membro_id)) && (
+            <div className="pub-zoom-leg">{[f.legenda, nomeDe(f.membro_id) && `por ${nomeDe(f.membro_id)}`].filter(Boolean).join(' ')}</div>
+          )}
+          {fotos.length > 1 && (
+            <>
+              <button className="pub-zoom-seta esq" aria-label="Anterior" onClick={(e) => { e.stopPropagation(); ir(-1) }}><ChevronLeft /></button>
+              <button className="pub-zoom-seta dir" aria-label="Próxima" onClick={(e) => { e.stopPropagation(); ir(1) }}><ChevronRight /></button>
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ---------------------------------------------------------------------
+   Produtos: preço, quantos tem e reserva
+--------------------------------------------------------------------- */
+function ProdutosPublicos(props: {
+  produtos: ProdutoPublico[]
+  whatsapp: string | null
+  nomeBarbearia: string
+  nome: string
+  setNome: (v: string) => void
+  tel: string
+  setTel: (v: string) => void
+  reservar: (p: { produtoId: string; quantidade: number; nome: string; telefone: string }) => Promise<{ id: string }>
+}) {
+  const [aberto, setAberto] = useState<string | null>(null)
+  const [qtd, setQtd] = useState(1)
+  const [enviando, setEnviando] = useState(false)
+  const [erro, setErro] = useState('')
+  const [feito, setFeito] = useState<{ produto: ProdutoPublico; qtd: number } | null>(null)
+
+  const abrir = (id: string) => { setAberto(id); setQtd(1); setErro('') }
+
+  const confirmar = async (p: ProdutoPublico) => {
+    if (props.nome.trim().length < 2) return setErro('Escreva seu nome.')
+    if (props.tel.replace(/\D/g, '').length < 10) return setErro('Confira o número com DDD.')
+    setEnviando(true)
+    setErro('')
+    try {
+      await props.reservar({ produtoId: p.id, quantidade: qtd, nome: props.nome.trim(), telefone: telefoneE164(props.tel) })
+      setFeito({ produto: p, qtd })
+      setAberto(null)
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não deu para reservar. Tente de novo.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  if (feito) {
+    const txt = `Oi! Reservei ${feito.qtd}x ${feito.produto.nome} pela página. Meu nome é ${primeiroNome(props.nome)}.`
+    return (
+      <section className="pub-reserva-ok">
+        <div className="pub-ok-ico"><Check /></div>
+        <h2>Reservado!</h2>
+        <p>
+          {feito.qtd}x <strong>{feito.produto.nome}</strong> ficou separado no seu nome. Paga na hora de retirar,
+          direto na {props.nomeBarbearia}.
+        </p>
+        <div className="pub-acoes-final">
+          {props.whatsapp && (
+            <a className="btn btn-primario btn-grande" href={`https://wa.me/${props.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(txt)}`} target="_blank" rel="noreferrer">
+              <IconeWhats /> Avisar a barbearia
+            </a>
+          )}
+          <button className="btn btn-sec btn-grande" onClick={() => setFeito(null)}>Ver outros produtos</button>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section>
+      <div className="pub-passo-tit"><h2>Produtos</h2></div>
+      <p className="pub-nota">Reserve aqui e pague na hora de retirar na barbearia.</p>
+      <div className="pub-produtos">
+        {props.produtos.map((p, i) => {
+          const acabou = p.disponivel <= 0
+          return (
+            <article key={p.id} className={`pub-produto ${acabou ? 'acabou' : ''}`} style={atraso(i)}>
+              <div className="pub-produto-foto">
+                {p.foto_url ? <img src={p.foto_url} alt={p.nome} loading="lazy" /> : <ShoppingBag />}
+              </div>
+              <div className="pub-produto-info">
+                <h3>{p.nome}</h3>
+                {p.descricao && <p>{p.descricao}</p>}
+                <div className="pub-produto-linha">
+                  <span className="pub-produto-preco">{dinheiro(p.preco_venda_centavos)}</span>
+                  <span className={`pub-estoque ${acabou ? 'zero' : p.disponivel <= 3 ? 'pouco' : ''}`}>
+                    {acabou ? 'Acabou' : p.disponivel <= 3 ? `Só ${p.disponivel}` : `${p.disponivel} disponíveis`}
+                  </span>
+                </div>
+                {aberto !== p.id ? (
+                  <button className="btn btn-primario" disabled={acabou} onClick={() => abrir(p.id)}>{acabou ? 'Sem estoque' : 'Reservar'}</button>
+                ) : (
+                  <div className="pub-reservar">
+                    <div className="pub-qtd" role="group" aria-label="Quantidade">
+                      <button type="button" aria-label="Menos" disabled={qtd <= 1} onClick={() => setQtd(qtd - 1)}><Minus size={16} /></button>
+                      <span>{qtd}</span>
+                      <button type="button" aria-label="Mais" disabled={qtd >= Math.min(10, p.disponivel)} onClick={() => setQtd(qtd + 1)}><Plus size={16} /></button>
+                      <span className="pub-qtd-total">{dinheiro(p.preco_venda_centavos * qtd)}</span>
+                    </div>
+                    <Campo rotulo="Seu nome" id={`rv-nome-${p.id}`}>
+                      <input id={`rv-nome-${p.id}`} className="input" autoComplete="name" value={props.nome} onChange={(e) => props.setNome(e.target.value)} />
+                    </Campo>
+                    <Campo rotulo="WhatsApp" id={`rv-tel-${p.id}`}>
+                      <input id={`rv-tel-${p.id}`} className="input" inputMode="tel" autoComplete="tel" placeholder="(11) 90000-0000"
+                        value={props.tel} onChange={(e) => props.setTel(mascaraTelefone(e.target.value))} />
+                    </Campo>
+                    {erro && <p className="pub-erro" role="alert">{erro}</p>}
+                    <div className="linha-flex gap-8">
+                      <button className="btn btn-sec" onClick={() => setAberto(null)}>Cancelar</button>
+                      <button className="btn btn-primario cresce" disabled={enviando} onClick={() => void confirmar(p)}>
+                        {enviando ? 'Reservando...' : `Reservar ${qtd > 1 ? `${qtd} unidades` : ''}`}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </article>
+          )
+        })}
+      </div>
+    </section>
   )
 }

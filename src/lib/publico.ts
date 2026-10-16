@@ -28,6 +28,32 @@ export interface DadosPublicos {
   agendamentos: Agendamento[]
   bloqueios: Bloqueio[]
   avaliacoes: Array<Avaliacao & { cliente_nome: string | null }>
+  portfolio: FotoPublica[]
+  produtos: ProdutoPublico[]
+}
+
+export interface FotoPublica {
+  id: string
+  membro_id: string | null
+  url: string
+  legenda: string | null
+}
+
+export interface ProdutoPublico {
+  id: string
+  nome: string
+  descricao: string | null
+  preco_venda_centavos: number
+  foto_url: string | null
+  /** estoque menos o que já está reservado */
+  disponivel: number
+}
+
+export interface PedidoReserva {
+  produtoId: string
+  quantidade: number
+  nome: string
+  telefone: string
 }
 
 export type Situacao = 'carregando' | 'pronto' | 'nao_encontrada' | 'erro'
@@ -56,6 +82,8 @@ function mapear(d: J): DadosPublicos {
     })),
     bloqueios: (d.bloqueios ?? []).map((b: J) => ({ ...b, inicio: new Date(b.inicio).toISOString(), fim: new Date(b.fim).toISOString(), motivo: null })),
     avaliacoes: (d.avaliacoes ?? []).map((a: J) => ({ ...a, cliente_id: '' })),
+    portfolio: d.portfolio ?? [],
+    produtos: d.produtos ?? [],
   }
 }
 
@@ -78,6 +106,11 @@ function useDemo(ativo: boolean) {
       barbearia: estado.barbearia, membros: estado.membros, servicos: estado.servicos, horarios: estado.horarios,
       jornadas: estado.jornadas, agendamentos: estado.agendamentos, bloqueios: estado.bloqueios,
       avaliacoes: estado.avaliacoes.map((a) => ({ ...a, cliente_nome: nomes.get(a.cliente_id) ?? null })),
+      portfolio: estado.portfolio ?? [],
+      produtos: estado.produtos
+        .filter((p) => p.ativo && (p.mostrar_na_pagina ?? true))
+        .map((p) => ({ id: p.id, nome: p.nome, descricao: p.descricao ?? null, preco_venda_centavos: p.preco_venda_centavos,
+          foto_url: p.foto_url ?? null, disponivel: Math.max(0, p.estoque_atual) })),
     }
   }, [ativo, estado])
 
@@ -162,11 +195,24 @@ export function usePaginaPublica(slug: string | undefined) {
     [demo, d, slug, dados, carregar],
   )
 
+  const reservarProduto = useCallback(
+    async (p: PedidoReserva) => {
+      if (demo) return { id: uid() }
+      const { data, error } = await supabase!.rpc('reservar_produto_publico', {
+        p_slug: slug, p_produto: p.produtoId, p_quantidade: p.quantidade, p_nome: p.nome, p_telefone: p.telefone,
+      })
+      void carregar()
+      if (error) throw new Error(mensagemDeErro(error))
+      return data as { id: string }
+    },
+    [demo, slug, carregar],
+  )
+
   if (demo) {
     const ok = !!d.dados && d.dados.barbearia.slug === slug && d.dados.barbearia.publicada
-    return { demo, situacao: (ok ? 'pronto' : 'nao_encontrada') as Situacao, dados: ok ? d.dados : null, agendar }
+    return { demo, situacao: (ok ? 'pronto' : 'nao_encontrada') as Situacao, dados: ok ? d.dados : null, agendar, reservarProduto }
   }
-  return { demo, situacao, dados, agendar }
+  return { demo, situacao, dados, agendar, reservarProduto }
 }
 
 /** "Meu horário": o cliente vê, confirma, muda ou cancela pelo link. */

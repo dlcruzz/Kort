@@ -11,7 +11,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { criarSeed, VERSAO_SEED, type Estado } from '../data/seed'
 import type {
-  Agendamento, AssinaturaClube, Barbearia, Cliente, Comanda, ComandaItem, Cupom, Despesa, FormaPagamento,
+  Agendamento, AssinaturaClube, Barbearia, Cliente, Comanda, ComandaItem, Cupom, Despesa, FormaPagamento, FotoPortfolio,
   HorarioFuncionamento, Jornada, ListaEspera, Membro, MembroConfiguracao, ModeloMensagem, OrigemAgendamento,
   PlanoClube, Produto, ProgramaFidelidade, Promocao, Servico, StatusAgendamento,
 } from './types'
@@ -64,7 +64,7 @@ const so = <T extends object>(o: T, campos: string[]) =>
   Object.fromEntries(Object.entries(o).filter(([k, v]) => campos.includes(k) && v !== undefined))
 
 const CAMPOS_CLIENTE = ['nome', 'telefone', 'email', 'data_nascimento', 'observacoes', 'membro_preferido_id', 'codigo_indicacao', 'indicado_por_id', 'aceita_mensagens']
-const CAMPOS_BARBEARIA = ['slug', 'nome', 'descricao', 'telefone', 'whatsapp', 'instagram', 'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'logo_url', 'modo_operacao', 'antecedencia_cancelamento_min', 'antecedencia_max_dias', 'intervalo_slots_min', 'publicada']
+const CAMPOS_BARBEARIA = ['slug', 'nome', 'descricao', 'telefone', 'whatsapp', 'instagram', 'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'logo_url', 'capa_url', 'modo_operacao', 'antecedencia_cancelamento_min', 'antecedencia_max_dias', 'intervalo_slots_min', 'publicada']
 const CAMPOS_MEMBRO = ['papel', 'nome_exibicao', 'foto_url', 'bio', 'cor_agenda', 'atende', 'ativo', 'ordem']
 const CAMPOS_CONFIG = ['comissao_servico_pct', 'comissao_produto_pct', 'meta_diaria_centavos', 'aluguel_cadeira_centavos', 'dia_vencimento_aluguel', 'eh_mei']
 
@@ -729,6 +729,31 @@ function criarAcoes(mudar: (fn: Mutacao) => void, ler: () => Estado, db: Banco |
         db.salvar(async (sb) => ok(await sb.from('barbearias').update(dados).eq('id', bid())))
       }
     },
+    // ---------- portfólio (a foto já foi enviada ao Storage; aqui só a linha)
+    adicionarFotoPortfolio(f: Omit<FotoPortfolio, 'id'>) {
+      const id = uid()
+      mudar((s) => {
+        s.portfolio.unshift({ ...f, id })
+      })
+      db?.salvar(async (sb) => ok(await sb.from('fotos_portfolio').insert({
+        id, barbearia_id: bid(), membro_id: f.membro_id, caminho_storage: f.url, legenda: f.legenda, publica: true,
+      })))
+      return id
+    },
+    editarFotoPortfolio(id: string, dados: Partial<Pick<FotoPortfolio, 'legenda' | 'membro_id'>>) {
+      mudar((s) => {
+        const f = s.portfolio.find((x) => x.id === id)
+        if (f) Object.assign(f, dados)
+      })
+      db?.salvar(async (sb) => ok(await sb.from('fotos_portfolio').update(dados).eq('id', id)))
+    },
+    removerFotoPortfolio(id: string) {
+      mudar((s) => {
+        s.portfolio = s.portfolio.filter((x) => x.id !== id)
+      })
+      db?.salvar(async (sb) => ok(await sb.from('fotos_portfolio').delete().eq('id', id)))
+    },
+
     salvarHorarios(h: Omit<HorarioFuncionamento, 'id'>[]) {
       const novos = h.map((x) => ({ id: uid(), ...x }))
       mudar((s) => {

@@ -16,6 +16,7 @@ import AdminEntrar, { ROTA_LOGIN_ADMIN } from './pages/auth/AdminEntrar'
 import Agendar from './pages/publico/Agendar'
 import MeuHorario from './pages/publico/MeuHorario'
 
+import MinhaBarbearia from './pages/app/MinhaBarbearia'
 import Agenda from './pages/app/Agenda'
 import Caixa from './pages/app/Caixa'
 import Clientes from './pages/app/Clientes'
@@ -60,6 +61,7 @@ export default function App() {
 
       <Route path="/app" element={<ExigeBarbearia><AppLayout /></ExigeBarbearia>}>
         <Route index element={<Navigate to="agenda" replace />} />
+        <Route path="minha-barbearia" element={<MinhaBarbearia />} />
         <Route path="agenda" element={<Agenda />} />
         <Route path="caixa" element={<Caixa />} />
         <Route path="clientes" element={<Clientes />} />

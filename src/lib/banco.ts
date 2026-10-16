@@ -205,6 +205,7 @@ export async function carregarEstado(sb: SupabaseClient, barbeariaId: string, pe
     produtos: (produtos ?? []).map((p: Linha) => ({
       id: p.id, nome: p.nome, preco_venda_centavos: p.preco_venda_centavos, custo_centavos: p.custo_centavos,
       estoque_atual: p.estoque_atual, estoque_minimo: p.estoque_minimo, ativo: p.ativo,
+      foto_url: p.foto_url ?? null, descricao: p.descricao ?? null, mostrar_na_pagina: p.mostrar_na_pagina ?? true,
     })),
     despesas: despesas.map((d) => ({ id: d.id, membro_id: d.membro_id, descricao: d.descricao, categoria: d.categoria, valor_centavos: d.valor_centavos, data: d.data, pago: d.pago })),
     alugueis: (alugueis ?? []).map((a: Linha) => ({ id: a.id, membro_id: a.membro_id, competencia: a.competencia, valor_centavos: a.valor_centavos, vencimento: a.vencimento, status: a.status, pago_em: iso(a.pago_em) })),

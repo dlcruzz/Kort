@@ -1,0 +1,309 @@
+/* Minha Barbearia (painel) */
+
+.mb-aviso {
+  background: var(--alerta-fundo);
+  color: var(--alerta);
+  border-radius: var(--r-campo);
+  padding: 10px 14px;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+.mb-nota {
+  color: var(--grafite);
+  font-size: 13.5px;
+  margin: 12px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mb-cont {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 10px;
+  background: var(--kort);
+  color: var(--preto);
+  font-size: 12px;
+}
+.mb-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.mb-pagina {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+.mb-campos {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+}
+.forte {
+  font-weight: 600;
+}
+.girando {
+  animation: mb-gira 0.9s linear infinite;
+}
+@keyframes mb-gira {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- caixa de foto */
+.mb-foto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.mb-foto-area {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1.5px dashed var(--linha);
+  background: var(--concreto);
+  overflow: hidden;
+  cursor: pointer;
+  color: var(--grafite);
+}
+.mb-foto-area:disabled {
+  cursor: default;
+}
+.mb-foto-area:not(:disabled):hover {
+  border-color: var(--preto);
+}
+.mb-foto-area img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mb-foto-vazio {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  padding: 12px;
+}
+.mb-foto-vazio small {
+  font-weight: 400;
+  font-size: 12.5px;
+  max-width: 260px;
+}
+.mb-foto-trocar {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--preto);
+  color: var(--branco);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 999px;
+  opacity: 0.88;
+}
+.mb-foto-carregando {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(246 246 242 / 0.75);
+}
+.mb-foto-quadrado .mb-foto-area {
+  aspect-ratio: 1;
+  border-radius: var(--r-painel);
+}
+.mb-foto-capa .mb-foto-area {
+  aspect-ratio: 16 / 7;
+  border-radius: var(--r-painel);
+}
+.mb-foto-redondo .mb-foto-area {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.mb-foto-redondo .mb-foto-trocar {
+  right: 50%;
+  transform: translateX(50%);
+  bottom: 6px;
+}
+.mb-foto-remover {
+  color: var(--grafite);
+}
+.mb-logo-letra {
+  font-family: var(--f-display);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--preto);
+  text-transform: uppercase;
+}
+
+/* ---------- capa + logo, como na página do cliente */
+.mb-vitrine {
+  position: relative;
+  padding-bottom: 56px;
+}
+.mb-vitrine-logo {
+  position: absolute;
+  left: 20px;
+  bottom: 0;
+  width: 112px;
+}
+.mb-vitrine-logo .mb-foto-area {
+  border: 4px solid var(--branco);
+  background: var(--kort);
+}
+
+/* ---------- equipe */
+.mb-equipe {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+}
+.mb-membro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.mb-membro .mb-foto {
+  width: 110px;
+}
+.mb-membro-nome {
+  font-weight: 600;
+}
+
+/* ---------- portfólio */
+.mb-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+}
+.mb-corte {
+  margin: 0;
+  background: var(--branco);
+  border: 1px solid var(--linha-fraca);
+  border-radius: var(--r-painel);
+  overflow: hidden;
+}
+.mb-corte img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+  background: var(--concreto);
+}
+.mb-corte figcaption {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+/* ---------- produtos */
+.mb-produtos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+.mb-produto {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px;
+}
+.mb-produto.escondido {
+  opacity: 0.6;
+}
+.mb-produto-info {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.mb-produto-info h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.mb-preco {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mb-produto-desc {
+  min-height: 60px;
+}
+
+/* ---------- reservas */
+.mb-reservas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mb-reserva {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--linha-fraca);
+  flex-wrap: wrap;
+}
+.mb-reserva:last-child {
+  border-bottom: 0;
+}
+.mb-reserva.st-cancelado {
+  opacity: 0.55;
+}
+.mb-reserva-foto {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--concreto);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.mb-reserva-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mb-reserva-acoes {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 860px) {
+  .mb-pagina {
+    grid-template-columns: 1fr;
+  }
+  .mb-produtos {
+    grid-template-columns: 1fr;
+  }
+  .mb-produto {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  .mb-vitrine-logo {
+    width: 92px;
+    left: 12px;
+  }
+  .mb-reserva-acoes {
+    width: 100%;
+  }
+}

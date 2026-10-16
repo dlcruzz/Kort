@@ -35,6 +35,7 @@ export interface Barbearia {
   cidade: string | null
   uf: string | null
   logo_url: string | null
+  capa_url?: string | null
   modo_operacao: ModoOperacao
   antecedencia_cancelamento_min: number
   antecedencia_max_dias: number
@@ -179,6 +180,10 @@ export interface Produto {
   estoque_atual: number
   estoque_minimo: number
   ativo: boolean
+  foto_url?: string | null
+  descricao?: string | null
+  /** aparece na página da barbearia */
+  mostrar_na_pagina?: boolean
 }
 
 export interface Despesa {
@@ -300,7 +305,7 @@ export interface Avaliacao {
 
 export interface FotoPortfolio {
   id: Uuid
-  membro_id: Uuid
+  membro_id: Uuid | null
   url: string
   legenda: string | null
 }
@@ -365,4 +370,16 @@ export interface AdminUsoFuncionalidade {
   evento: string
   total_30d: number
   barbearias_que_usam: number
+}
+
+export type StatusReserva = 'reservado' | 'retirado' | 'cancelado'
+
+export interface ReservaProduto {
+  id: Uuid
+  produto_id: Uuid
+  cliente_nome: string
+  telefone: string
+  quantidade: number
+  status: StatusReserva
+  criado_em: string
 }
