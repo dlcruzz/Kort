@@ -18,11 +18,16 @@ export function Folha(props: {
   const { aberta, aoFechar } = props
   const ref = useRef<HTMLDivElement>(null)
   const tituloId = useId()
+  // As telas passam aoFechar como função nova a cada render (a cada letra
+  // digitada). Guardar numa ref evita que o efeito abaixo rode de novo e
+  // jogue o foco para o primeiro campo enquanto a pessoa digita.
+  const fecharRef = useRef(aoFechar)
+  fecharRef.current = aoFechar
 
   useEffect(() => {
     if (!aberta) return
     const anterior = document.activeElement as HTMLElement | null
-    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && aoFechar()
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && fecharRef.current()
     document.addEventListener('keydown', tecla)
     document.body.style.overflow = 'hidden'
     setTimeout(() => ref.current?.querySelector<HTMLElement>('input, select, textarea, button:not(.fechar)')?.focus(), 30)
@@ -31,7 +36,7 @@ export function Folha(props: {
       document.body.style.overflow = ''
       anterior?.focus?.()
     }
-  }, [aberta, aoFechar])
+  }, [aberta])
 
   if (!aberta) return null
   return createPortal(
