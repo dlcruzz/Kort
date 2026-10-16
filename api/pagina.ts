@@ -54,7 +54,7 @@ async function buscar(slug: string): Promise<Barbearia | null> {
 
 export function etiquetas(b: Barbearia, link: string, origem: string) {
   const lugar = [b.bairro?.trim(), b.cidade?.trim() && `${b.cidade.trim()}${b.uf ? `/${b.uf}` : ''}`].filter(Boolean).join(', ')
-  const titulo = `${b.nome.trim()} | Agende seu horário`
+  const titulo = b.nome.trim()
   const descricao = (b.descricao?.trim() || `Escolha o serviço, o barbeiro e o horário${lugar ? ` na ${b.nome.trim()}, ${lugar}` : ''}. Sem precisar mandar mensagem.`).slice(0, 190)
   const imagem = b.logo_url || b.capa_url || `${origem}/logo.png`
   const e = escapar
