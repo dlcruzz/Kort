@@ -359,9 +359,15 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
         </footer>
       </div>
 
-      {passo < 5 && (passo > 1 || servicoIds.length > 0) && (
+      {passo < 5 && (
         <div className={`pub-resumo ${passo === 1 ? 'pub-resumo-vitrine' : ''}`}>
           <div className="pub-resumo-in">
+            {passo === 1 && !escolhidos.length ? (
+              <div>
+                <div className="pub-resumo-tit">Agende seu horário</div>
+                <div className="det">Escolha o serviço, o barbeiro e a hora</div>
+              </div>
+            ) : (
             <div>
               <div className="tot"><TextoContado texto={total ? dinheiroCurto(total) : 'R$ 0'} ms={400} /></div>
               <div className="det">
@@ -369,9 +375,16 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
                 {slot && passo >= 3 ? `, ${nomeDiaCurto(dia.getDay())} ${slot.hhmm}` : ''}
               </div>
             </div>
-            <button className="btn btn-primario btn-grande" disabled={!podeAvancar || enviando} onClick={avancar}>
-              {passo === 4 ? (enviando ? 'Marcando...' : 'Confirmar horário') : passo === 1 ? 'Escolher horário' : 'Continuar'}
-            </button>
+            )}
+            {passo === 1 && !escolhidos.length ? (
+              <button className="btn btn-primario btn-grande" onClick={() => document.getElementById('servicos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                Agendar horário
+              </button>
+            ) : (
+              <button className="btn btn-primario btn-grande" disabled={!podeAvancar || enviando} onClick={avancar}>
+                {passo === 4 ? (enviando ? 'Marcando...' : 'Confirmar horário') : passo === 1 ? 'Escolher dia e hora' : 'Continuar'}
+              </button>
+            )}
           </div>
         </div>
       )}

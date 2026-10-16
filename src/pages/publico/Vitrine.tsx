@@ -38,7 +38,7 @@ export default function Vitrine(p: Props) {
 
   const secoes = useMemo(
     () => [
-      { id: 'servicos', nome: 'Serviços', tem: p.servicos.length > 0 },
+      { id: 'servicos', nome: 'Agendar', tem: p.servicos.length > 0 },
       { id: 'cortes', nome: 'Cortes', tem: dados.portfolio.length > 0 },
       { id: 'equipe', nome: 'Equipe', tem: mostrarEquipe },
       { id: 'produtos', nome: 'Produtos', tem: dados.produtos.length > 0 },
@@ -106,8 +106,8 @@ export default function Vitrine(p: Props) {
       <div className="vt-corpo">
         {/* ---------- serviços: tabela de preços */}
         <section id="servicos" className="vt-secao">
-          <h2>Serviços e preços</h2>
-          <p className="vt-dica">Toque para escolher. Dá para juntar mais de um, o tempo e o valor somam.</p>
+          <h2>Agende seu horário</h2>
+          <p className="vt-dica">Escolha o serviço (pode juntar mais de um). Depois você escolhe o barbeiro, o dia e a hora.</p>
           <ul className="vt-precos">
             {p.servicos.map((s) => {
               const marcado = p.servicoIds.includes(s.id)

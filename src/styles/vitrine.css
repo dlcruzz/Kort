@@ -796,9 +796,15 @@
   font-weight: 700;
 }
 
-/* barra de baixo aparece quando escolhe o primeiro serviço */
+/* barra de agendar: sempre à vista na vitrine */
 .pub-resumo-vitrine {
-  animation: vt-barra 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: vt-barra 0.45s 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pub-resumo-tit {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.05;
 }
 @keyframes vt-barra {
   from { transform: translateY(100%); }
