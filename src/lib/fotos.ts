@@ -6,7 +6,8 @@
 //
 // Antes de enviar, a foto é reduzida no próprio celular (lado maior de
 // até 1600 px, em WebP). Foto de 5 MB vira uns 200 KB e o plano grátis
-// do Supabase rende muito mais.
+// do Supabase rende muito mais. Logo e capa vão em PNG/JPEG porque
+// aparecem na prévia do link no WhatsApp, que nem sempre aceita WebP.
 
 import { supabase } from './supabase'
 import { uid } from './format'
@@ -19,7 +20,9 @@ const LIMITE_FINAL = 2 * 1024 * 1024     // igual ao limite do bucket
 export const fotosLigadas = () => !!supabase
 
 /** Reduz e converte para WebP (JPEG se o navegador não souber WebP). */
-export async function comprimirImagem(arquivo: File, ladoMaximo = 1600, qualidade = 0.82): Promise<Blob> {
+export type Formato = 'webp' | 'png' | 'jpeg'
+
+export async function comprimirImagem(arquivo: File, ladoMaximo = 1600, qualidade = 0.82, formato: Formato = 'webp'): Promise<Blob> {
   if (!arquivo.type.startsWith('image/')) throw new Error('Escolha um arquivo de imagem.')
   if (arquivo.size > LIMITE_ORIGINAL) throw new Error('Essa foto é grande demais. Tente outra.')
 
@@ -33,13 +36,18 @@ export async function comprimirImagem(arquivo: File, ladoMaximo = 1600, qualidad
   canvas.height = h
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Não deu para preparar a foto.')
+  // JPEG não tem transparência: fundo preto como o resto do Kort
+  if (formato === 'jpeg') {
+    ctx.fillStyle = '#080808'
+    ctx.fillRect(0, 0, w, h)
+  }
   ctx.drawImage(img, 0, 0, w, h)
   if ('close' in img) img.close()
 
-  let blob = await paraBlob(canvas, 'image/webp', qualidade)
-  if (!blob || blob.type !== 'image/webp') blob = await paraBlob(canvas, 'image/jpeg', qualidade)
+  let blob = await paraBlob(canvas, `image/${formato}`, qualidade)
+  if (!blob || blob.type !== `image/${formato}`) blob = await paraBlob(canvas, 'image/jpeg', qualidade)
   if (!blob) throw new Error('Não deu para preparar a foto.')
-  if (blob.size > LIMITE_FINAL) blob = (await paraBlob(canvas, blob.type, 0.6)) ?? blob
+  if (blob.size > LIMITE_FINAL) blob = (await paraBlob(canvas, blob.type === 'image/png' ? 'image/jpeg' : blob.type, 0.6)) ?? blob
   if (blob.size > LIMITE_FINAL) throw new Error('A foto ficou grande demais mesmo reduzida. Tente outra.')
   return blob
 }
@@ -70,10 +78,10 @@ const paraBlob = (c: HTMLCanvasElement, tipo: string, q: number) =>
  * `nome` sem extensão; cada envio ganha um nome novo para o navegador não
  * mostrar a foto antiga guardada em cache.
  */
-export async function enviarFoto(bucket: Bucket, barbeariaId: string, nome: string, arquivo: File, ladoMaximo?: number): Promise<string> {
+export async function enviarFoto(bucket: Bucket, barbeariaId: string, nome: string, arquivo: File, ladoMaximo?: number, formato?: Formato): Promise<string> {
   if (!supabase) throw new Error('Fotos só funcionam com a conta real (não na demonstração).')
-  const blob = await comprimirImagem(arquivo, ladoMaximo)
-  const ext = blob.type === 'image/webp' ? 'webp' : 'jpg'
+  const blob = await comprimirImagem(arquivo, ladoMaximo, undefined, formato)
+  const ext = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg'
   const caminho = `${barbeariaId}/${nome}-${uid().slice(0, 8)}.${ext}`
   const { error } = await supabase.storage.from(bucket).upload(caminho, blob, { contentType: blob.type, cacheControl: '31536000' })
   if (error) throw new Error(traduzir(error.message))

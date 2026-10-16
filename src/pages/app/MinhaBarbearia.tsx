@@ -119,7 +119,8 @@ function AbaPagina() {
 
   const trocar = async (campo: 'logo_url' | 'capa_url', arquivo: File) => {
     const antiga = b[campo]
-    const url = await enviarFoto('barbearias', b.id, campo === 'logo_url' ? 'logo' : 'capa', arquivo, campo === 'logo_url' ? 600 : 1800)
+    const ehLogo = campo === 'logo_url'
+    const url = await enviarFoto('barbearias', b.id, ehLogo ? 'logo' : 'capa', arquivo, ehLogo ? 600 : 1800, ehLogo ? 'png' : 'jpeg')
     acoes.salvarBarbearia({ [campo]: url })
     void apagarFoto(antiga)
     avisar(campo === 'logo_url' ? 'Logo atualizado' : 'Capa atualizada')
