@@ -11,6 +11,7 @@ import { useSessao } from '../lib/sessao'
 import { deIsoDia, hoje } from '../lib/format'
 import { RailIndicador } from '../components/RailIndicador'
 import { Avatar, Folha } from '../components/ui'
+import { contraste, corDe } from '../lib/nicho'
 import { LinkAgendamento } from '../components/LinkAgendamento'
 import { AvisoNovos } from '../components/AvisoNovos'
 import { TelaPagamento } from '../components/TelaPagamento'
@@ -22,7 +23,7 @@ const GRUPOS: Array<{ titulo: string | null; itens: ItemMenu[] }> = [
   {
     titulo: null,
     itens: [
-      { to: '/app/minha-barbearia', nome: 'Minha Barbearia', icone: Store },
+      { to: '/app/minha-barbearia', nome: 'Minha página', icone: Store },
       { to: '/app/agenda', nome: 'Agenda', icone: CalendarDays },
       { to: '/app/caixa', nome: 'Caixa', icone: Receipt, contador: 'comandas' },
       { to: '/app/clientes', nome: 'Clientes', icone: Users },
@@ -98,8 +99,9 @@ export default function AppLayout() {
     return <TelaPagamento />
   }
 
+  const cor = corDe(estado.barbearia)
   return (
-    <div className="app">
+    <div className="app" style={{ ['--kort' as string]: cor, ['--kort-txt' as string]: contraste(cor) }}>
       <aside className="rail" aria-label="Menu principal">
         <RailIndicador />
         <NavLink to="/app/agenda" className="rail-logo" aria-label="Kort, ir para a agenda">

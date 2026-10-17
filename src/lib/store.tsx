@@ -64,7 +64,7 @@ const so = <T extends object>(o: T, campos: string[]) =>
   Object.fromEntries(Object.entries(o).filter(([k, v]) => campos.includes(k) && v !== undefined))
 
 const CAMPOS_CLIENTE = ['nome', 'telefone', 'email', 'data_nascimento', 'observacoes', 'membro_preferido_id', 'codigo_indicacao', 'indicado_por_id', 'aceita_mensagens']
-const CAMPOS_BARBEARIA = ['slug', 'nome', 'descricao', 'telefone', 'whatsapp', 'instagram', 'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'logo_url', 'capa_url', 'modo_operacao', 'antecedencia_cancelamento_min', 'antecedencia_max_dias', 'intervalo_slots_min', 'publicada']
+const CAMPOS_BARBEARIA = ['slug', 'nome', 'descricao', 'telefone', 'whatsapp', 'instagram', 'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'logo_url', 'capa_url', 'nicho', 'cor_destaque', 'modo_operacao', 'antecedencia_cancelamento_min', 'antecedencia_max_dias', 'intervalo_slots_min', 'publicada']
 const CAMPOS_MEMBRO = ['papel', 'nome_exibicao', 'foto_url', 'bio', 'cor_agenda', 'atende', 'ativo', 'ordem']
 const CAMPOS_CONFIG = ['comissao_servico_pct', 'comissao_produto_pct', 'meta_diaria_centavos', 'aluguel_cadeira_centavos', 'dia_vencimento_aluguel', 'eh_mei']
 

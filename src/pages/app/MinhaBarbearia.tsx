@@ -12,12 +12,14 @@ import { dataCurta, dinheiro, hora, mascaraTelefone, plural, primeiroNome } from
 import { CabecalhoPagina, Campo, Confirmar, Switch, Vazio } from '../../components/ui'
 import { useAvisar } from '../../components/avisos'
 import type { Membro, Produto, ReservaProduto, StatusReserva } from '../../lib/types'
+import { CORES_DESTAQUE, corDe, rotulos } from '../../lib/nicho'
 import '../../styles/minha-barbearia.css'
 
 type Aba = 'pagina' | 'equipe' | 'portfolio' | 'produtos' | 'reservas'
 
 export default function MinhaBarbearia() {
   const { estado } = useKort()
+  const r = rotulos(estado.barbearia.nicho ?? 'barbearia')
   const [params, setParams] = useSearchParams()
   const aba = ((params.get('aba') as Aba) || 'pagina') as Aba
   const setAba = (a: Aba) => setParams(a === 'pagina' ? {} : { aba: a }, { replace: true })
@@ -27,8 +29,8 @@ export default function MinhaBarbearia() {
   return (
     <>
       <CabecalhoPagina
-        titulo="Minha Barbearia"
-        sub="Monte a página que o cliente abre pelo seu link: fotos, cortes e produtos."
+        titulo={r.meuLugar}
+        sub={`Monte a página que o cliente abre pelo seu link: fotos, ${r.cortes} e produtos.`}
         acoes={
           <a className="btn btn-sec" href={`/b/${estado.barbearia.slug}`} target="_blank" rel="noreferrer">
             <ExternalLink /> Ver como o cliente vê
@@ -108,6 +110,7 @@ function CaixaFoto(props: {
 --------------------------------------------------------------------- */
 function AbaPagina() {
   const { estado, acoes } = useKort()
+  const r = rotulos(estado.barbearia.nicho ?? 'barbearia')
   const avisar = useAvisar()
   const b = estado.barbearia
   const ehDono = estado.usuarioPapel === 'dono'
@@ -157,15 +160,15 @@ function AbaPagina() {
                 vazio={<span className="mb-logo-letra">{b.nome.slice(0, 1)}</span>} />
             </div>
           </div>
-          {!ehDono && <p className="mb-nota">Só o dono troca logo, capa e dados da barbearia.</p>}
+          {!ehDono && <p className="mb-nota">Só o dono troca logo, capa e dados {r.lugarArtigo}.</p>}
         </div>
       </section>
 
       <section className="painel">
         <div className="painel-cab"><h2>O que o cliente lê</h2></div>
         <fieldset className="painel-corpo grade-campos mb-campos" disabled={!ehDono}>
-          <Campo rotulo="Nome da barbearia" id="mb-nome" className="largo"><input id="mb-nome" className="input" value={f.nome} onChange={(e) => set('nome', e.target.value)} /></Campo>
-          <Campo rotulo="Sobre a barbearia" id="mb-desc" className="largo" ajuda="Duas ou três linhas. Estilo, tempo de casa, o que vocês fazem de melhor.">
+          <Campo rotulo={`Nome ${r.lugarArtigo}`} id="mb-nome" className="largo"><input id="mb-nome" className="input" value={f.nome} onChange={(e) => set('nome', e.target.value)} /></Campo>
+          <Campo rotulo={`Sobre ${r.lugarArtigo}`} id="mb-desc" className="largo" ajuda="Duas ou três linhas. Estilo, tempo de casa, o que vocês fazem de melhor.">
             <textarea id="mb-desc" className="textarea" maxLength={400} value={f.descricao} onChange={(e) => set('descricao', e.target.value)} />
           </Campo>
           <Campo rotulo="Rua" id="mb-rua"><input id="mb-rua" className="input" value={f.logradouro} onChange={(e) => set('logradouro', e.target.value)} /></Campo>
@@ -176,9 +179,22 @@ function AbaPagina() {
           <Campo rotulo="WhatsApp" id="mb-wa" ajuda="Para o cliente falar com você e combinar a retirada de produtos.">
             <input id="mb-wa" className="input" inputMode="tel" value={f.whatsapp} onChange={(e) => set('whatsapp', e.target.value.replace(/[^0-9+]/g, ''))} placeholder="+5511900000000" />
           </Campo>
-          <Campo rotulo="Instagram" id="mb-ig"><input id="mb-ig" className="input" value={f.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="@suabarbearia" /></Campo>
+          <Campo rotulo="Instagram" id="mb-ig"><input id="mb-ig" className="input" value={f.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder={r.nicho === "nail" ? "@seuestudio" : "@suabarbearia"} /></Campo>
           {ehDono && <button className="btn btn-primario largo" style={{ justifySelf: 'start' }} onClick={salvar}>Salvar</button>}
         </fieldset>
+      </section>
+
+      <section className="painel">
+        <div className="painel-cab"><h2>Cor da sua página</h2></div>
+        <div className="painel-corpo">
+          <p className="mb-nota" style={{ marginTop: 0 }}>Aparece no botão de agendar, nas tags e nos detalhes da sua página.</p>
+          <div className="mb-cores" role="radiogroup" aria-label="Cor da marca">
+            {CORES_DESTAQUE.map((c) => (
+              <button key={c.hex} type="button" role="radio" aria-checked={corDe(b) === c.hex} aria-label={c.nome} disabled={!ehDono}
+                className="mb-cor" style={{ background: c.hex }} onClick={() => { acoes.salvarBarbearia({ cor_destaque: c.hex }); avisar('Cor atualizada') }} />
+            ))}
+          </div>
+        </div>
       </section>
     </div>
   )
@@ -231,6 +247,7 @@ function AbaEquipe() {
 --------------------------------------------------------------------- */
 function AbaPortfolio() {
   const { estado, acoes } = useKort()
+  const r = rotulos(estado.barbearia.nicho ?? 'barbearia')
   const avisar = useAvisar()
   const ref = useRef<HTMLInputElement>(null)
   const [enviando, setEnviando] = useState<{ feitas: number; total: number } | null>(null)
@@ -272,7 +289,7 @@ function AbaPortfolio() {
     <>
       <div className="mb-barra">
         <p className="mb-nota" style={{ margin: 0 }}>
-          {estado.portfolio.length ? `${plural(estado.portfolio.length, 'foto', 'fotos')} na sua página.` : 'Mostre os cortes que vocês fazem. Cliente confia no que vê.'}
+          {estado.portfolio.length ? `${plural(estado.portfolio.length, 'foto', 'fotos')} na sua página.` : `Mostre os ${r.cortes} que vocês fazem. Cliente confia no que vê.`}
         </p>
         <button className="btn btn-primario" disabled={!!enviando || !fotosLigadas()} onClick={() => ref.current?.click()}>
           {enviando ? <><Loader2 className="girando" /> Enviando {enviando.feitas + 1} de {enviando.total}</> : <><ImagePlus /> Adicionar fotos</>}
@@ -281,7 +298,7 @@ function AbaPortfolio() {
       </div>
 
       {estado.portfolio.length === 0 ? (
-        <Vazio titulo="Nenhum corte ainda" texto="Pode escolher várias fotos de uma vez (até 12). Elas aparecem na aba Portfólio da sua página." />
+        <Vazio titulo={`Nenhum ${r.servico} ainda`} texto="Pode escolher várias fotos de uma vez (até 12). Elas aparecem na aba Portfólio da sua página." />
       ) : (
         <div className="mb-grade">
           {estado.portfolio.map((f) => (

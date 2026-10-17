@@ -36,6 +36,8 @@ export interface Barbearia {
   uf: string | null
   logo_url: string | null
   capa_url?: string | null
+  nicho?: 'barbearia' | 'nail'
+  cor_destaque?: string | null
   modo_operacao: ModoOperacao
   antecedencia_cancelamento_min: number
   antecedencia_max_dias: number

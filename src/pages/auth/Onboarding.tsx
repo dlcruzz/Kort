@@ -9,8 +9,9 @@ import { mensagemDeErro } from '../../lib/banco'
 import { TelaCarregando } from '../../components/guardas'
 import { conviteGuardado } from './Convite'
 import { CHAVE_ALUGUEL_PENDENTE, COMO_TRABALHA, PERGUNTA_DETALHE, PERGUNTA_QUEM, type ComoTrabalha, type QuemAtende } from '../../lib/modos'
+import { CORES_DESTAQUE, corPadrao, rotulos, type Nicho } from '../../lib/nicho'
 
-// Configuração inicial em 4 passos (como trabalha, dados, serviços, horário). No modo real tudo vai numa chamada só,
+// Configuração inicial em 5 passos (nicho, como trabalha, dados, serviços, horário). No modo real tudo vai numa chamada só,
 // rpc('criar_barbearia'): cria a barbearia, o dono, o teste grátis, os
 // serviços, o horário, a jornada do dono e as mensagens padrão.
 
@@ -35,6 +36,8 @@ function Passos() {
   const { acoes } = useKort()
   const real = sessao.modo === 'real'
   const [passo, setPasso] = useState(1)
+  const [nicho, setNicho] = useState<Nicho | null>(null)
+  const [cor, setCor] = useState<string | null>(null)
   const [whats, setWhats] = useState('')
   const [slugLivre, setSlugLivre] = useState<boolean | null>(null)
   const [erro, setErro] = useState('')
@@ -94,6 +97,8 @@ function Passos() {
         p_abre: abre,
         p_fecha: fecha,
         p_whatsapp: whats ? telefoneE164(whats) : null,
+        p_nicho: nicho ?? 'barbearia',
+        p_cor: cor ?? corPadrao(nicho ?? 'barbearia'),
       })
       if (error) {
         setEnviando(false)
@@ -105,7 +110,7 @@ function Passos() {
       nav(temEquipe ? '/app/equipe' : '/app/agenda', { replace: true })
       return
     }
-    acoes.salvarBarbearia({ nome: nome || 'Minha barbearia', slug: slug || slugificar(nome) || 'minha-barbearia', bairro, modo_operacao: modo })
+    acoes.salvarBarbearia({ nome: nome || 'Meu cadastro', slug: slug || slugificar(nome) || 'meu-cadastro', bairro, modo_operacao: modo, nicho: nicho ?? 'barbearia', cor_destaque: cor ?? corPadrao(nicho ?? 'barbearia') })
     servicos.filter((s) => s.nome.trim()).forEach((s) => acoes.salvarServico({ nome: s.nome, preco_centavos: paraCentavos(s.preco), duracao_min: s.duracao }))
     acoes.salvarHorarios(dias.map((d) => ({ dia_semana: d, abre, fecha })))
     guardarAluguel()
@@ -116,11 +121,45 @@ function Passos() {
     <div className="onb">
       <div className="onb-topo"><img src="/logo-sm.png" alt="Kort" /></div>
       <div className="onb-in">
-        <div className="onb-passos" aria-label={`Passo ${passo} de 4`}>
-          {[1, 2, 3, 4].map((n) => <span key={n} className={n <= passo ? 'feito' : ''} />)}
+        <div className="onb-passos" aria-label={`Passo ${passo} de 5`}>
+          {[1, 2, 3, 4, 5].map((n) => <span key={n} className={n <= passo ? 'feito' : ''} />)}
         </div>
 
         {passo === 1 && (
+          <>
+            <h1>O que você faz?</h1>
+            <p className="sub">O Kort se ajusta ao seu trabalho e você escolhe a cor da sua página.</p>
+            <div className="escolha-modo" role="radiogroup" aria-label="Nicho">
+              {([
+                { id: 'barbearia', titulo: 'Barbearia', texto: 'Cortes, barba, visagismo. Padrão amarelo do Kort.' },
+                { id: 'nail', titulo: 'Nail designer', texto: 'Alongamento, esmaltação, decoração. Padrão rosa.' },
+              ] as const).map((o) => (
+                <button key={o.id} type="button" role="radio" aria-checked={nicho === o.id}
+                  className="escolha-modo-item" onClick={() => { setNicho(o.id); setCor(corPadrao(o.id)) }}>
+                  <span className="escolha-modo-marca" aria-hidden />
+                  <span className="cresce">
+                    <span className="escolha-modo-tit">{o.titulo}</span>
+                    <span className="escolha-modo-txt">{o.texto}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            {nicho && (
+              <div className="onb-pergunta2">
+                <h2>Cor da sua página</h2>
+                <p className="sub" style={{ marginBottom: 10 }}>Dá para trocar quando quiser em {rotulos(nicho).meuLugar}.</p>
+                <div className="onb-cores" role="radiogroup" aria-label="Cor da marca">
+                  {CORES_DESTAQUE.map((c) => (
+                    <button key={c.hex} type="button" role="radio" aria-checked={cor === c.hex} aria-label={c.nome}
+                      className="onb-cor" style={{ background: c.hex }} onClick={() => setCor(c.hex)} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {passo === 2 && (
           <>
             <h1>Quem atende aí?</h1>
             <p className="sub">Duas perguntas rápidas e o Kort se organiza do seu jeito. Dá para mudar depois em Configurações.</p>
@@ -145,9 +184,9 @@ function Passos() {
           </>
         )}
 
-        {passo === 2 && (
+        {passo === 3 && (
           <>
-            <h1>{alugaUma || como === 'sozinho' ? 'Seu perfil' : 'Sua barbearia'}</h1>
+            <h1>{alugaUma || como === 'sozinho' ? 'Seu perfil' : (nicho === 'nail' ? 'Seu estúdio' : 'Sua barbearia')}</h1>
             <p className="sub">É assim que o cliente vai ver na página de agendamento.</p>
             <div className="coluna gap-16">
               <Campo rotulo={alugaUma ? 'Seu nome de barbeiro ou da sua marca' : 'Nome da barbearia'} id="nome">
@@ -175,7 +214,7 @@ function Passos() {
           </>
         )}
 
-        {passo === 3 && (
+        {passo === 4 && (
           <>
             <h1>O que você faz</h1>
             <p className="sub">Comece com os principais. Dá para mudar quando quiser.</p>
@@ -194,7 +233,7 @@ function Passos() {
           </>
         )}
 
-        {passo === 4 && (
+        {passo === 5 && (
           <>
             <h1>{temEquipe ? 'Quando abre' : 'Quando você atende'}</h1>
             <p className="sub">O link só mostra horários dentro do expediente.</p>
@@ -218,8 +257,8 @@ function Passos() {
         {erro && <div className="campo" style={{ marginTop: 16 }}><span className="erro" role="alert">{erro}</span></div>}
         <div className="onb-rodape">
           {passo > 1 ? <button className="btn btn-sec" onClick={() => setPasso(passo - 1)}>Voltar</button> : <span />}
-          {passo < 4 ? (
-            <button className="btn btn-primario" onClick={() => setPasso(passo + 1)} disabled={(passo === 1 && !como) || (passo === 2 && (!nome.trim() || slugLivre === false))}>Continuar</button>
+          {passo < 5 ? (
+            <button className="btn btn-primario" onClick={() => setPasso(passo + 1)} disabled={(passo === 1 && !nicho) || (passo === 2 && !como) || (passo === 3 && (!nome.trim() || slugLivre === false))}>Continuar</button>
           ) : (
             <button className="btn btn-primario" onClick={concluir} disabled={enviando || dias.length === 0}>{enviando ? 'Abrindo...' : 'Abrir minha agenda'}</button>
           )}

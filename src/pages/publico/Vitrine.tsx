@@ -10,6 +10,7 @@ import type { DadosPublicos, FotoPublica, PedidoReserva, ProdutoPublico } from '
 import type { HorarioFuncionamento, Membro, Servico } from '../../lib/types'
 import { dinheiro, dinheiroCurto, hhmmParaMin, mascaraTelefone, nomeDia, primeiroNome, telefoneE164 } from '../../lib/format'
 import { Campo } from '../../components/ui'
+import { contraste, corDe, rotulos } from '../../lib/nicho'
 import { IconeWhats } from '../../components/IconeWhats'
 import '../../styles/vitrine.css'
 
@@ -35,11 +36,14 @@ export default function Vitrine(p: Props) {
   const mostrarEquipe = equipe.length > 1 || equipe.some((m) => m.foto_url)
   const comentarios = dados.avaliacoes.filter((a) => a.publica && a.comentario).slice(0, 6)
   const nomeDe = (id: string | null) => (id ? equipe.find((m) => m.id === id)?.nome_exibicao : undefined)
+  const cor = corDe(b)
+  const corTxt = contraste(cor)
+  const r = rotulos(b.nicho ?? 'barbearia')
 
   const secoes = useMemo(
     () => [
       { id: 'servicos', nome: 'Agendar', tem: p.servicos.length > 0 },
-      { id: 'cortes', nome: 'Cortes', tem: dados.portfolio.length > 0 },
+      { id: 'cortes', nome: r.cortes[0].toUpperCase() + r.cortes.slice(1), tem: dados.portfolio.length > 0 },
       { id: 'equipe', nome: 'Equipe', tem: mostrarEquipe },
       { id: 'produtos', nome: 'Produtos', tem: dados.produtos.length > 0 },
       { id: 'avaliacoes', nome: 'Avaliações', tem: comentarios.length > 0 },
@@ -59,7 +63,7 @@ export default function Vitrine(p: Props) {
   const irPara = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   return (
-    <div className="vt">
+    <div className="vt" style={{ ['--kort' as string]: cor, ['--kort-txt' as string]: corTxt }}>
       {/* ---------- topo */}
       <header className={`vt-topo ${b.capa_url ? 'com-capa' : ''}`}>
         {b.capa_url && <img className="vt-capa" src={b.capa_url} alt="" />}
@@ -128,7 +132,7 @@ export default function Vitrine(p: Props) {
           </ul>
         </section>
 
-        {dados.portfolio.length > 0 && <Cortes fotos={dados.portfolio} nomeDe={nomeDe} aoAgendar={() => irPara('servicos')} />}
+        {dados.portfolio.length > 0 && <Cortes fotos={dados.portfolio} nomeDe={nomeDe} aoAgendar={() => irPara('servicos')} titulo={r.tituloCortes} />}
 
         {mostrarEquipe && (
           <section id="equipe" className="vt-secao">
@@ -266,7 +270,7 @@ function Barbeiro({ m }: { m: Membro }) {
 /* ---------------------------------------------------------------------
    Cortes (portfólio), com tela cheia ao tocar
 --------------------------------------------------------------------- */
-function Cortes({ fotos, nomeDe, aoAgendar }: { fotos: FotoPublica[]; nomeDe: (id: string | null) => string | undefined; aoAgendar: () => void }) {
+function Cortes({ fotos, nomeDe, aoAgendar, titulo }: { fotos: FotoPublica[]; nomeDe: (id: string | null) => string | undefined; aoAgendar: () => void; titulo: string }) {
   const [aberta, setAberta] = useState<number | null>(null)
   const f = aberta !== null ? fotos[aberta] : null
   const ir = (passo: number) => setAberta((i) => (i === null ? null : (i + passo + fotos.length) % fotos.length))
@@ -286,7 +290,7 @@ function Cortes({ fotos, nomeDe, aoAgendar }: { fotos: FotoPublica[]; nomeDe: (i
 
   return (
     <section id="cortes" className="vt-secao">
-      <h2>Cortes feitos aqui</h2>
+      <h2>{titulo}</h2>
       <div className={`vt-galeria n${Math.min(fotos.length, 5)}`}>
         {fotos.slice(0, 12).map((x, i) => (
           <button key={x.id} className="vt-foto" onClick={() => setAberta(i)} aria-label={x.legenda ? `Ver ${x.legenda}` : 'Ver foto'}>

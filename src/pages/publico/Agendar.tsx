@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, CalendarPlus, Share2 } from 'lucide-react'
 import { usePaginaPublica } from '../../lib/publico'
+import { contraste, corDe } from '../../lib/nicho'
 import Vitrine from './Vitrine'
 import { horariosLivres, type Slot } from '../../lib/agenda'
 import {
@@ -172,12 +173,15 @@ function Pagina({ pagina }: { pagina: ReturnType<typeof usePaginaPublica> & { da
     ].join('\n')
   }
 
+  const corVitrine = corDe(b)
+  const corVitrineTxt = contraste(corVitrine)
   const linkAgenda = criado
     ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${criado.servicos.map((s) => s.nome).join(' + ')} na ${b.nome}`)}&dates=${new Date(criado.inicio).toISOString().replace(/[-:]|\.\d{3}/g, '')}/${new Date(criado.fim).toISOString().replace(/[-:]|\.\d{3}/g, '')}&location=${encodeURIComponent(`${b.logradouro}, ${b.numero} - ${b.bairro}, ${b.cidade}`)}`
     : '#'
 
   return (
-    <div className={`pub ${passo === 1 ? 'pub-com-vitrine' : ''}`}>
+    <div className={`pub ${passo === 1 ? 'pub-com-vitrine' : ''}`}
+      style={{ ['--kort' as string]: corVitrine, ['--kort-txt' as string]: corVitrineTxt }}>
       {passo === 1 && (
         <Vitrine dados={estado} media={media} servicos={servicosAtivos} servicoIds={servicoIds} alternarServico={alternarServico}
           nome={nome} setNome={setNome} tel={tel} setTel={setTel} reservar={pagina.reservarProduto} />

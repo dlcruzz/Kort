@@ -891,3 +891,26 @@
 @media (prefers-reduced-motion: reduce) {
   .onb-pergunta2, .onb-resumo { animation: none; }
 }
+
+/* Onboarding: seletor de cor da marca (nicho) */
+.onb-cores {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.onb-cor {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--linha);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.onb-cor:hover {
+  transform: scale(1.06);
+}
+.onb-cor[aria-checked='true'] {
+  border-color: var(--preto);
+  box-shadow: 0 0 0 3px var(--preto);
+}

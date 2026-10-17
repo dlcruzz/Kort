@@ -307,3 +307,31 @@
     width: 100%;
   }
 }
+
+/* Seletor de cor da marca */
+.mb-cores {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.mb-cor {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--linha);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s;
+}
+.mb-cor:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+.mb-cor[aria-checked='true'] {
+  border-color: var(--preto);
+  box-shadow: 0 0 0 3px var(--preto);
+}
+.mb-cor:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

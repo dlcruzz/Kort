@@ -106,7 +106,7 @@
   display: grid;
   place-items: center;
   background: var(--kort);
-  color: var(--preto);
+  color: var(--kort-txt, var(--preto));
   border: 3px solid var(--preto);
   box-shadow: 0 0 0 1px #3a3a37;
   margin-bottom: 18px;
@@ -340,7 +340,7 @@
 [aria-pressed='true'] > .vt-caixa {
   background: var(--kort);
   border-color: var(--kort);
-  color: var(--preto);
+  color: var(--kort-txt, var(--preto));
   transform: scale(1.06);
 }
 .vt-servico {
@@ -577,7 +577,7 @@
   font-weight: 600;
 }
 .vt-estoque.pouco {
-  color: var(--preto);
+  color: var(--kort-txt, var(--preto));
   background: var(--kort);
 }
 .vt-estoque.zero {
@@ -678,7 +678,7 @@
   height: 36px;
   border-radius: 50%;
   background: var(--kort);
-  color: var(--preto);
+  color: var(--kort-txt, var(--preto));
   display: grid;
   place-items: center;
 }

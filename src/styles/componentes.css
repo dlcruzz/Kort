@@ -54,7 +54,7 @@
 
 .btn-primario {
   background: var(--kort);
-  color: var(--preto);
+  color: var(--kort-txt, var(--preto));
   border: 1.5px solid var(--preto);
   box-shadow: var(--adesivo);
 }
